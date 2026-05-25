@@ -1,0 +1,818 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="보관대">
+<title>보관대 재고 관리</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{font-family:'Pretendard',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f2f2f0;color:#1a1a1a;font-size:14px;min-height:100vh}
+button{-webkit-appearance:none;appearance:none;outline:none;font-family:'Pretendard',-apple-system,sans-serif}
+.tabs{gap:5px}
+.tabs .tab+.tab{border-left:none}
+/* header */
+.hdr{background:#fff;border-bottom:1px solid #e5e5e5;padding:14px 16px 10px;position:sticky;top:0;z-index:50}
+.hdr-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.hdr h1{font-size:17px;font-weight:600;letter-spacing:-0.3px}
+.hdr-btns{display:flex;gap:8px}
+/* search bar — full width, big */
+.sw{position:relative;width:100%}
+.sw input{font-size:18px;padding:13px 16px 13px 48px;border:2px solid #e0e0e0;border-radius:14px;background:#f7f7f5;width:100%;outline:none;color:#1a1a1a;font-weight:500;letter-spacing:0.5px}
+.sw input:focus{background:#fff;border-color:#1a1a1a}
+.sw input::placeholder{color:#bbb;font-weight:400;font-size:16px}
+.si{position:absolute;left:14px;top:50%;transform:translateY(-50%);font-size:20px;pointer-events:none}
+.dd{position:absolute;top:calc(100% + 6px);left:0;right:0;background:#fff;border:1.5px solid #e0e0e0;border-radius:14px;z-index:200;max-height:370px;overflow-y:auto;display:none;box-shadow:0 8px 24px rgba(0,0,0,0.12)}
+.dd.open{display:block}
+.dd-hint{font-size:12px;color:#999;padding:8px 16px;background:#f9f9f7;border-bottom:1px solid #eee;border-radius:14px 14px 0 0}
+.dd-item{padding:11px 16px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #f2f2f0;font-size:15px;min-height:56px}
+.dd-item:last-child{border-bottom:none}
+.dd-item:hover,.dd-item:active{background:#f5f5f3}
+.dd-hl{background:#fff3cd;border-radius:2px;padding:0 2px}
+/* buttons */
+.btn{font-size:13px;padding:8px 14px;border:1px solid #e0e0e0;border-radius:10px;background:#fff;cursor:pointer;white-space:nowrap;font-weight:500;color:#1a1a1a}
+.btn:active{background:#f0f0ee;transform:scale(0.97)}
+.btn-csv{background:#e8f5e9;color:#2e7d32;border-color:#b2dfdb}
+.btn-csv:active{background:#c8e6c9}
+.btn-reset{background:#fff3e0;color:#e65100;border-color:#ffcc80}
+.btn-import{background:#e3f2fd;color:#1565c0;border-color:#90caf9}
+.btn-import:active{background:#bbdefb}
+/* main */
+.main{padding:14px 16px}
+/* stats */
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:14px}
+.stat{background:#fff;border:1px solid #e8e8e8;border-radius:12px;padding:11px 10px;text-align:center}
+.stat .sl{font-size:10px;color:#999;margin-bottom:3px}
+.stat .sv{font-size:20px;font-weight:600;color:#1a1a1a}
+.stat.warn .sv{color:#c62828}
+/* legend */
+.lgnd{display:flex;gap:12px;margin-bottom:12px;flex-wrap:wrap}
+.li{display:flex;align-items:center;gap:4px;font-size:11px;color:#777}
+.ldot{width:10px;height:10px;border-radius:3px;border:1px solid transparent;flex-shrink:0}
+/* tabs */
+.tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;overflow-x:auto;padding-bottom:2px}
+.tabs::-webkit-scrollbar{display:none}
+.tab{font-size:12px;padding:6px 13px;border:1px solid #e0e0e0;border-radius:20px;background:#fff;cursor:pointer;color:#777;white-space:nowrap;flex-shrink:0}
+.tab.active{background:#1a1a1a;color:#fff;border-color:#1a1a1a;font-weight:600}
+.wb{color:#e53935;font-size:10px;margin-left:2px}
+/* rack card */
+.card{background:#fff;border:1px solid #e8e8e8;border-radius:14px;padding:14px}
+.rack-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+.rack-head h2{font-size:15px;font-weight:600}
+.rack-meta{font-size:11px;color:#999}
+.chr{display:flex;align-items:center;gap:6px;margin-bottom:5px}
+.flp{width:300px;flex-shrink:0}
+.chs{display:flex;gap:4px;flex:1}
+.ch{flex:1;text-align:center;font-size:10px;color:#bbb}
+/* floor rows */
+.fr{display:flex;align-items:center;gap:6px;margin-bottom:6px;min-height:62px}
+.fi{width:240px;flex-shrink:0;display:flex;flex-direction:column;justify-content:center;gap:3px;padding:8px 10px}
+.fn{font-size:12px;color:#bbb;font-weight:300;letter-spacing:0.2px;margin-bottom:1px}
+.fc{font-size:26px;font-weight:700;font-family:'Pretendard',sans-serif;color:#1a1a1a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;letter-spacing:0.2em;line-height:1.2}
+.fc.emp{color:#ccc;font-weight:400;font-style:italic}
+.cs{display:flex;gap:3px;flex:1}
+/* cells */
+.cell{flex:1;min-width:0;max-width:52px;border-radius:8px;border:1px solid transparent;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0;padding:4px 2px;transition:transform 0.08s;user-select:none;-webkit-user-select:none;touch-action:manipulation;max-height:62px}
+.cell:active{transform:scale(0.93)}
+.cell.sel{outline:2.5px solid #1a1a1a;z-index:5}
+.cell.hl{outline:2.5px solid #1976d2;animation:pulse 0.7s ease 3}
+@keyframes pulse{0%,100%{outline-color:#1976d2}50%{outline-color:#90caf9}}
+.cell.ec{background:#f5f5f3;border-color:#ebebeb;cursor:default}
+.cell.ec:active{transform:none}
+.cell.ok{background:#e8f5e9;border-color:#a5d6a7}
+.cell.lw{background:#fff8e1;border-color:#ffe082}
+.cell.cr{background:#ffebee;border-color:#ef9a9a}
+.rn{font-size:8px;color:#ccc;line-height:1;font-weight:300}
+.qn{font-size:18px;font-weight:700;font-family:'Pretendard',sans-serif;line-height:1.1}
+.qm{font-size:8px;line-height:1;color:#ccc;font-weight:300}
+.cell.ok .qn{color:#2e7d32}.cell.ok .qm{color:#81c784}
+.cell.lw .qn{color:#e65100}.cell.lw .qm{color:#ffb74d}
+.cell.cr .qn{color:#c62828}.cell.cr .qm{color:#ef5350}
+.cell.ec .qn{color:#ddd}
+/* action bar */
+.abar{margin-top:12px;padding-top:12px;border-top:1px solid #f2f2f0}
+.sel-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:10px}
+.slbl{font-size:13px;color:#888;flex:1;min-width:120px}
+.slbl strong{color:#1a1a1a}
+.btn-row{display:flex;gap:8px;width:100%}
+.bp,.bm,.bc{flex:1;font-size:14px;padding:11px 8px;border-radius:10px;cursor:pointer;font-weight:600;border:1px solid transparent;transition:transform 0.08s}
+.bp:active,.bm:active,.bc:active{transform:scale(0.96)}
+.bp{background:#e8f5e9;border-color:#a5d6a7;color:#2e7d32}
+.bm{background:#ffebee;border-color:#ef9a9a;color:#c62828}
+.bc{background:#f5f5f3;border-color:#e0e0e0;color:#777;font-weight:500}
+.bp:disabled,.bm:disabled,.bc:disabled{opacity:.3;cursor:default}
+/* log */
+.lw{background:#f9f9f7;border-radius:10px;padding:10px 13px;margin-top:12px}
+.lt{font-size:11px;color:#999;margin-bottom:6px;font-weight:500;display:flex;justify-content:space-between;align-items:center}
+.lr{font-size:12px;color:#666;display:flex;gap:8px;padding:2px 0}
+.lrt{color:#ccc;flex-shrink:0;width:38px}
+.lrm strong{color:#1a1a1a;font-weight:500}
+/* toast */
+.toast{position:fixed;bottom:28px;left:50%;transform:translateX(-50%);background:rgba(26,26,26,0.92);color:#fff;padding:11px 22px;border-radius:22px;font-size:13px;opacity:0;transition:opacity .25s;pointer-events:none;z-index:999;white-space:nowrap;backdrop-filter:blur(4px)}
+.toast.show{opacity:1}
+/* modal */
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:300;align-items:flex-end;justify-content:center}
+.modal-bg.open{display:flex}
+.modal{background:#fff;border-radius:20px 20px 0 0;padding:24px 20px 40px;width:100%;max-width:480px}
+.modal h3{font-size:16px;font-weight:600;margin-bottom:16px}
+.mf{margin-bottom:12px}
+.mf label{font-size:12px;color:#888;display:block;margin-bottom:4px}
+.mf input,.mf select{width:100%;font-size:14px;padding:10px 12px;border:1px solid #e0e0e0;border-radius:10px;background:#f9f9f7;color:#1a1a1a;outline:none}
+.mf input:focus,.mf select:focus{background:#fff;border-color:#999}
+.mrow{display:flex;gap:10px;margin-top:16px}
+.mrow button{flex:1;font-size:14px;padding:12px;border-radius:10px;cursor:pointer;font-weight:500}
+.mbtn-c{background:#f5f5f3;border:1px solid #e0e0e0;color:#777}
+.mbtn-ok{background:#1a1a1a;border:none;color:#fff}
+.merr{font-size:12px;color:#c62828;margin-top:8px;min-height:16px}
+input[type=file]{display:none}
+@media(max-width:480px){
+  .fi{width:100px}
+  .flp{width:100px}
+  .stats{gap:6px}
+  .stat .sv{font-size:18px}
+  .sw input{font-size:16px;padding:11px 14px 11px 44px}
+}
+</style>
+</head>
+<body>
+<div class="hdr">
+  <div class="hdr-top">
+    <h1>📦 보관대 재고 관리</h1>
+    <div class="hdr-btns">
+      <button class="btn" onclick="openAddModal()">＋ 추가</button>
+      <button class="btn btn-csv" onclick="exportCSV()">💾 CSV 저장</button>
+      <button class="btn btn-import" onclick="document.getElementById('fi').click()">📂 CSV 불러오기</button>
+      <button class="btn btn-reset" onclick="confirmReset()">↺</button>
+    </div>
+    <input type="file" id="fi" accept=".csv" onchange="importCSV(event)">
+  </div>
+  <div class="sw">
+    <span class="si">🔍</span>
+    <input id="srch" type="text" placeholder="형번 입력 (예: 101515...)" autocomplete="off" inputmode="numeric" pattern="[0-9]*" oninput="onSearch(this.value)" onfocus="showKp()" onblur="hideKp()">
+    <div class="dd" id="dd"></div>
+    <div id="keypad" style="display:none;position:absolute;right:0;top:calc(100% + 8px);z-index:250;background:#fff;border:1.5px solid #e0e0e0;border-radius:16px;padding:10px;box-shadow:0 8px 28px rgba(0,0,0,0.15);width:190px">
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:7px">
+        <button onmousedown="event.preventDefault();kpPress('7')" style="padding:15px 6px;font-size:22px;font-weight:600;font-family:'Pretendard',sans-serif;border:1px solid #e8e8e8;border-radius:10px;background:#fff;cursor:pointer;color:#1a1a1a">7</button>
+        <button onmousedown="event.preventDefault();kpPress('8')" style="padding:15px 6px;font-size:22px;font-weight:600;font-family:'Pretendard',sans-serif;border:1px solid #e8e8e8;border-radius:10px;background:#fff;cursor:pointer;color:#1a1a1a">8</button>
+        <button onmousedown="event.preventDefault();kpPress('9')" style="padding:15px 6px;font-size:22px;font-weight:600;font-family:'Pretendard',sans-serif;border:1px solid #e8e8e8;border-radius:10px;background:#fff;cursor:pointer;color:#1a1a1a">9</button>
+        <button onmousedown="event.preventDefault();kpPress('4')" style="padding:15px 6px;font-size:22px;font-weight:600;font-family:'Pretendard',sans-serif;border:1px solid #e8e8e8;border-radius:10px;background:#fff;cursor:pointer;color:#1a1a1a">4</button>
+        <button onmousedown="event.preventDefault();kpPress('5')" style="padding:15px 6px;font-size:22px;font-weight:600;font-family:'Pretendard',sans-serif;border:1px solid #e8e8e8;border-radius:10px;background:#fff;cursor:pointer;color:#1a1a1a">5</button>
+        <button onmousedown="event.preventDefault();kpPress('6')" style="padding:15px 6px;font-size:22px;font-weight:600;font-family:'Pretendard',sans-serif;border:1px solid #e8e8e8;border-radius:10px;background:#fff;cursor:pointer;color:#1a1a1a">6</button>
+        <button onmousedown="event.preventDefault();kpPress('1')" style="padding:15px 6px;font-size:22px;font-weight:600;font-family:'Pretendard',sans-serif;border:1px solid #e8e8e8;border-radius:10px;background:#fff;cursor:pointer;color:#1a1a1a">1</button>
+        <button onmousedown="event.preventDefault();kpPress('2')" style="padding:15px 6px;font-size:22px;font-weight:600;font-family:'Pretendard',sans-serif;border:1px solid #e8e8e8;border-radius:10px;background:#fff;cursor:pointer;color:#1a1a1a">2</button>
+        <button onmousedown="event.preventDefault();kpPress('3')" style="padding:15px 6px;font-size:22px;font-weight:600;font-family:'Pretendard',sans-serif;border:1px solid #e8e8e8;border-radius:10px;background:#fff;cursor:pointer;color:#1a1a1a">3</button>
+        <button onmousedown="event.preventDefault();kpBack()" style="padding:15px 6px;font-size:18px;border:1px solid #e8e8e8;border-radius:10px;background:#f5f5f3;cursor:pointer;color:#555">⌫</button>
+        <button onmousedown="event.preventDefault();kpPress('0')" style="padding:15px 6px;font-size:22px;font-weight:600;font-family:'Pretendard',sans-serif;border:1px solid #e8e8e8;border-radius:10px;background:#fff;cursor:pointer;color:#1a1a1a">0</button>
+        <button onmousedown="event.preventDefault();kpClear()" style="padding:15px 6px;font-size:11px;font-weight:700;border:1px solid #e8e8e8;border-radius:10px;background:#ffebee;cursor:pointer;color:#c62828">지우기</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<div class="main">
+  <div style="margin-bottom:14px">
+    <div class="stat warn" style="display:inline-flex;flex-direction:row;align-items:center;gap:10px;padding:10px 18px;border-radius:12px">
+      <div class="sl" style="margin:0;font-size:13px">긴급 재고 (0~1개)</div>
+      <div class="sv" id="sWrn" style="font-size:24px">—</div>
+    </div>
+  </div>
+  <div class="lgnd">
+    <div class="li"><div class="ldot" style="background:#e8f5e9;border-color:#a5d6a7"></div>충분 4~5</div>
+    <div class="li"><div class="ldot" style="background:#fff8e1;border-color:#ffe082"></div>부족 2~3</div>
+    <div class="li"><div class="ldot" style="background:#ffebee;border-color:#ef9a9a"></div>긴급 0~1</div>
+    <div class="li"><div class="ldot" style="background:#f5f5f3;border-color:#ebebeb"></div>빈 칸</div>
+  </div>
+  <div class="tabs" id="tabs"></div>
+  <div class="card">
+    <div class="rack-head"><h2 id="rTitle">보관대 1</h2><span class="rack-meta" id="rMeta"></span></div>
+    <div class="chr"><div class="flp"></div><div class="chs" id="chs"></div></div>
+    <div id="floorArea"></div>
+    <div class="abar">
+      <div class="sel-row">
+        <div class="slbl" id="slbl">셀을 탭해서 선택하세요</div>
+      </div>
+      <div class="btn-row">
+        <button class="bp" id="bPlus" disabled onclick="bulkChange(1)">＋ 입고</button>
+        <button class="bm" id="bMinus" disabled onclick="bulkChange(-1)">－ 출고</button>
+        <button class="bc" id="bClr" disabled onclick="clearSel()">해제</button>
+      </div>
+    </div>
+    <div class="lw">
+      <div class="lt">
+        <span>변경 이력</span>
+        <span id="lastSave" style="font-size:10px;color:#ccc"></span>
+      </div>
+      <div id="logList"><div class="lr"><span class="lrt">—</span><span class="lrm">이력 없음</span></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- 부품 추가 모달 -->
+<div class="modal-bg" id="modalBg" onclick="bgClose(event)">
+  <div class="modal">
+    <h3>부품 추가 / 수정</h3>
+    <div class="mf"><label>형번</label><input id="mCode" type="text" placeholder="예: FWJW-101515Z"></div>
+    <div class="mf"><label>보관대</label><select id="mRack"></select></div>
+    <div class="mf"><label>층</label><select id="mFloor"></select></div>
+    <div class="mf"><label>롤 번호</label><select id="mRoll"></select></div>
+    <div class="mf"><label>수량 (0~5)</label><input id="mQty" type="number" min="0" max="5" value="0"></div>
+    <div class="mrow">
+      <button class="mbtn-c" onclick="closeModal()">취소</button>
+      <button class="mbtn-ok" onclick="addPart()">저장</button>
+    </div>
+    <div class="merr" id="mErr"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- 특이사항 팝업 -->
+<div class="modal-bg" id="noteBg" onclick="if(event.target===this)closeNote()" style="align-items:center;padding:16px">
+  <div style="background:#fff;border-radius:20px;width:100%;max-width:520px;overflow:hidden;max-height:90vh;display:flex;flex-direction:column">
+    <div style="padding:20px 20px 14px;border-bottom:1px solid #f0f0f0;display:flex;justify-content:space-between;align-items:flex-start;flex-shrink:0">
+      <div>
+        <div id="noteCode" style="font-size:19px;font-weight:700;font-family:monospace;color:#1a1a1a"></div>
+        <div id="noteLoc" style="font-size:13px;color:#aaa;margin-top:3px"></div>
+      </div>
+      <button onclick="closeNote()" style="background:#f5f5f3;border:none;font-size:18px;color:#888;cursor:pointer;padding:6px 10px;line-height:1;border-radius:8px">×</button>
+    </div>
+    <div style="overflow-y:auto;padding:16px 20px;flex:1">
+      <div style="font-size:12px;font-weight:600;color:#999;margin-bottom:10px;letter-spacing:0.5px">롤별 특이사항</div>
+      <div id="noteRollList" style="display:flex;flex-direction:column;gap:8px"></div>
+    </div>
+    <div style="padding:14px 20px;border-top:1px solid #f0f0f0;flex-shrink:0">
+      <button onclick="closeNote()" style="width:100%;padding:14px;background:#1a1a1a;color:#fff;border:none;border-radius:12px;font-size:15px;font-weight:600;cursor:pointer">닫기</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const RACKS=8, FLOORS=6, COLS=6, MAX=5;
+let activePrefix='';
+function sc(code){
+  if(!code) return '';
+  const s=code.replace(/^FWJW-/i,'');
+  // 숫자와 알파벳 사이 스페이스 (예: 101515Z → 101515 Z, 101515ZA → 101515 ZA)
+  return s.replace(/^([0-9]+)([A-Za-z].*)$/,'$1 $2');
+}
+function prefix(code){
+  if(!code) return '';
+  return sc(code).replace(/\D/g,'').slice(0,2);
+}
+const STORAGE_KEY='storage_dashboard_v1';
+const INIT_DATA=[{"key": "1-6", "rack": 1, "floor": 6, "code": "FWJW-101515Z", "roll": 1, "qty": 0, "note": "", "empty": false}, {"key": "1-6", "rack": 1, "floor": 6, "code": "FWJW-101515Z", "roll": 2, "qty": 0, "note": "", "empty": false}, {"key": "1-6", "rack": 1, "floor": 6, "code": "FWJW-101515Z", "roll": 3, "qty": 0, "note": "", "empty": false}, {"key": "1-6", "rack": 1, "floor": 6, "code": "FWJW-101515Z", "roll": 4, "qty": 0, "note": "", "empty": false}, {"key": "1-6", "rack": 1, "floor": 6, "code": "FWJW-101515Z", "roll": 5, "qty": 0, "note": "", "empty": false}, {"key": "1-6", "rack": 1, "floor": 6, "code": "FWJW-101515Z", "roll": 6, "qty": 0, "note": "", "empty": false}, {"key": "1-5", "rack": 1, "floor": 5, "code": "FWJW-101516ZA", "roll": 1, "qty": 0, "note": "", "empty": false}, {"key": "1-5", "rack": 1, "floor": 5, "code": "FWJW-101516ZA", "roll": 2, "qty": 0, "note": "", "empty": false}, {"key": "1-5", "rack": 1, "floor": 5, "code": "FWJW-101516ZA", "roll": 3, "qty": 0, "note": "", "empty": false}, {"key": "1-5", "rack": 1, "floor": 5, "code": "FWJW-101516ZA", "roll": 4, "qty": 0, "note": "", "empty": false}, {"key": "1-5", "rack": 1, "floor": 5, "code": "FWJW-101516ZA", "roll": 5, "qty": 0, "note": "", "empty": false}, {"key": "1-5", "rack": 1, "floor": 5, "code": "FWJW-101516ZA", "roll": 6, "qty": 0, "note": "", "empty": false}, {"key": "1-4", "rack": 1, "floor": 4, "code": "FWJW-101517ZA", "roll": 1, "qty": 0, "note": "", "empty": false}, {"key": "1-4", "rack": 1, "floor": 4, "code": "FWJW-101517ZA", "roll": 2, "qty": 0, "note": "", "empty": false}, {"key": "1-4", "rack": 1, "floor": 4, "code": "FWJW-101517ZA", "roll": 3, "qty": 0, "note": "", "empty": false}, {"key": "1-4", "rack": 1, "floor": 4, "code": "FWJW-101517ZA", "roll": 4, "qty": 0, "note": "", "empty": false}, {"key": "1-4", "rack": 1, "floor": 4, "code": "FWJW-101517ZA", "roll": 5, "qty": 0, "note": "", "empty": false}, {"key": "1-4", "rack": 1, "floor": 4, "code": "FWJW-101517ZA", "roll": 6, "qty": 0, "note": "", "empty": false}, {"key": "1-3", "rack": 1, "floor": 3, "code": "", "roll": 1, "qty": 0, "note": "", "empty": true}, {"key": "1-3", "rack": 1, "floor": 3, "code": "", "roll": 2, "qty": 0, "note": "", "empty": true}, {"key": "1-3", "rack": 1, "floor": 3, "code": "", "roll": 3, "qty": 0, "note": "", "empty": true}, {"key": "1-3", "rack": 1, "floor": 3, "code": "", "roll": 4, "qty": 0, "note": "", "empty": true}, {"key": "1-3", "rack": 1, "floor": 3, "code": "", "roll": 5, "qty": 0, "note": "", "empty": true}, {"key": "1-3", "rack": 1, "floor": 3, "code": "", "roll": 6, "qty": 0, "note": "", "empty": true}, {"key": "1-2", "rack": 1, "floor": 2, "code": "FWJW-101525ZA", "roll": 1, "qty": 0, "note": "", "empty": false}, {"key": "1-2", "rack": 1, "floor": 2, "code": "FWJW-101525ZA", "roll": 2, "qty": 0, "note": "", "empty": false}, {"key": "1-2", "rack": 1, "floor": 2, "code": "FWJW-101525ZA", "roll": 3, "qty": 0, "note": "", "empty": false}, {"key": "1-2", "rack": 1, "floor": 2, "code": "FWJW-101525ZA", "roll": 4, "qty": 0, "note": "", "empty": false}, {"key": "1-2", "rack": 1, "floor": 2, "code": "FWJW-101525ZA", "roll": 5, "qty": 0, "note": "", "empty": false}, {"key": "1-2", "rack": 1, "floor": 2, "code": "FWJW-101525ZA", "roll": 6, "qty": 0, "note": "", "empty": false}, {"key": "1-1", "rack": 1, "floor": 1, "code": "FWJW-101624ZJ", "roll": 1, "qty": 0, "note": "", "empty": false}, {"key": "1-1", "rack": 1, "floor": 1, "code": "FWJW-101624ZJ", "roll": 2, "qty": 0, "note": "", "empty": false}, {"key": "1-1", "rack": 1, "floor": 1, "code": "FWJW-101624ZJ", "roll": 3, "qty": 0, "note": "", "empty": false}, {"key": "1-1", "rack": 1, "floor": 1, "code": "FWJW-101624ZJ", "roll": 4, "qty": 0, "note": "", "empty": false}, {"key": "1-1", "rack": 1, "floor": 1, "code": "FWJW-101624ZJ", "roll": 5, "qty": 0, "note": "", "empty": false}, {"key": "1-1", "rack": 1, "floor": 1, "code": "FWJW-101624ZJ", "roll": 6, "qty": 0, "note": "", "empty": false}, {"key": "2-6", "rack": 2, "floor": 6, "code": "FWJW-111519ZB", "roll": 1, "qty": 0, "note": "", "empty": false}, {"key": "2-6", "rack": 2, "floor": 6, "code": "FWJW-111519ZB", "roll": 2, "qty": 0, "note": "", "empty": false}, {"key": "2-6", "rack": 2, "floor": 6, "code": "FWJW-111519ZB", "roll": 3, "qty": 0, "note": "", "empty": false}, {"key": "2-6", "rack": 2, "floor": 6, "code": "FWJW-111519ZB", "roll": 4, "qty": 0, "note": "", "empty": false}, {"key": "2-6", "rack": 2, "floor": 6, "code": "FWJW-111519ZB", "roll": 5, "qty": 0, "note": "", "empty": false}, {"key": "2-6", "rack": 2, "floor": 6, "code": "FWJW-111519ZB", "roll": 6, "qty": 0, "note": "", "empty": false}, {"key": "2-5", "rack": 2, "floor": 5, "code": "FWJW-111617ZB", "roll": 1, "qty": 0, "note": "", "empty": false}, {"key": "2-5", "rack": 2, "floor": 5, "code": "FWJW-111617ZB", "roll": 2, "qty": 0, "note": "", "empty": false}, {"key": "2-5", "rack": 2, "floor": 5, "code": "FWJW-111617ZB", "roll": 3, "qty": 0, "note": "", "empty": false}, {"key": "2-5", "rack": 2, "floor": 5, "code": "FWJW-111617ZB", "roll": 4, "qty": 0, "note": "", "empty": false}, {"key": "2-5", "rack": 2, "floor": 5, "code": "FWJW-111617ZB", "roll": 5, "qty": 0, "note": "", "empty": false}, {"key": "2-5", "rack": 2, "floor": 5, "code": "FWJW-111617ZB", "roll": 6, "qty": 0, "note": "", "empty": false}, {"key": "2-4", "rack": 2, "floor": 4, "code": "FWJW-111619ZB", "roll": 1, "qty": 0, "note": "", "empty": false}, {"key": "2-4", "rack": 2, "floor": 4, "code": "FWJW-111619ZB", "roll": 2, "qty": 0, "note": "", "empty": false}, {"key": "2-4", "rack": 2, "floor": 4, "code": "FWJW-111619ZB", "roll": 3, "qty": 0, "note": "", "empty": false}, {"key": "2-4", "rack": 2, "floor": 4, "code": "FWJW-111619ZB", "roll": 4, "qty": 0, "note": "", "empty": false}, {"key": "2-4", "rack": 2, "floor": 4, "code": "FWJW-111619ZB", "roll": 5, "qty": 0, "note": "", "empty": false}, {"key": "2-4", "rack": 2, "floor": 4, "code": "FWJW-111619ZB", "roll": 6, "qty": 0, "note": "", "empty": false}, {"key": "2-3", "rack": 2, "floor": 3, "code": "FWJW-111619ZD", "roll": 1, "qty": 0, "note": "", "empty": false}, {"key": "2-3", "rack": 2, "floor": 3, "code": "FWJW-111619ZD", "roll": 2, "qty": 0, "note": "", "empty": false}, {"key": "2-3", "rack": 2, "floor": 3, "code": "FWJW-111619ZD", "roll": 3, "qty": 0, "note": "", "empty": false}, {"key": "2-3", "rack": 2, "floor": 3, "code": "FWJW-111619ZD", "roll": 4, "qty": 0, "note": "", "empty": false}, {"key": "2-3", "rack": 2, "floor": 3, "code": "FWJW-111619ZD", "roll": 5, "qty": 0, "note": "", "empty": false}, {"key": "2-3", "rack": 2, "floor": 3, "code": "FWJW-111619ZD", "roll": 6, "qty": 0, "note": "", "empty": false}, {"key": "2-2", "rack": 2, "floor": 2, "code": "FWJW-111620ZD", "roll": 1, "qty": 0, "note": "", "empty": false}, {"key": "2-2", "rack": 2, "floor": 2, "code": "FWJW-111620ZD", "roll": 2, "qty": 0, "note": "", "empty": false}, {"key": "2-2", "rack": 2, "floor": 2, "code": "FWJW-111620ZD", "roll": 3, "qty": 0, "note": "", "empty": false}, {"key": "2-2", "rack": 2, "floor": 2, "code": "FWJW-111620ZD", "roll": 4, "qty": 0, "note": "", "empty": false}, {"key": "2-2", "rack": 2, "floor": 2, "code": "FWJW-111620ZD", "roll": 5, "qty": 0, "note": "", "empty": false}, {"key": "2-2", "rack": 2, "floor": 2, "code": "FWJW-111620ZD", "roll": 6, "qty": 0, "note": "", "empty": false}, {"key": "2-1", "rack": 2, "floor": 1, "code": "FWJW-111620ZA", "roll": 1, "qty": 0, "note": "", "empty": false}, {"key": "2-1", "rack": 2, "floor": 1, "code": "FWJW-111620ZA", "roll": 2, "qty": 0, "note": "", "empty": false}, {"key": "2-1", "rack": 2, "floor": 1, "code": "FWJW-111620ZA", "roll": 3, "qty": 0, "note": "", "empty": false}, {"key": "2-1", "rack": 2, "floor": 1, "code": "FWJW-111620ZA", "roll": 4, "qty": 0, "note": "", "empty": false}, {"key": "2-1", "rack": 2, "floor": 1, "code": "FWJW-111620ZA", "roll": 5, "qty": 0, "note": "", "empty": false}, {"key": "2-1", "rack": 2, "floor": 1, "code": "FWJW-111620ZA", "roll": 6, "qty": 0, "note": "", "empty": false}, {"key": "3-6", "rack": 3, "floor": 6, "code": "FWJW-121722Z", "roll": 1, "qty": 0, "note": "", "empty": false}, {"key": "3-6", "rack": 3, "floor": 6, "code": "FWJW-121722Z", "roll": 2, "qty": 0, "note": "", "empty": false}, {"key": "3-6", "rack": 3, "floor": 6, "code": "FWJW-121722Z", "roll": 3, "qty": 0, "note": "", "empty": false}, {"key": "3-6", "rack": 3, "floor": 6, "code": "FWJW-121722Z", "roll": 4, "qty": 0, "note": "", "empty": false}, {"key": "3-6", "rack": 3, "floor": 6, "code": "FWJW-121722Z", "roll": 5, "qty": 0, "note": "", "empty": false}, {"key": "3-6", "rack": 3, "floor": 6, "code": "FWJW-121722Z", "roll": 6, "qty": 0, "note": "", "empty": false}, {"key": "3-5", "rack": 3, "floor": 5, "code": "FWJW-121723Z", "roll": 1, "qty": 0, "note": "", "empty": false}, {"key": "3-5", "rack": 3, "floor": 5, "code": "FWJW-121723Z", "roll": 2, "qty": 0, "note": "", "empty": false}, {"key": "3-5", "rack": 3, "floor": 5, "code": "FWJW-121723Z", "roll": 3, "qty": 0, "note": "", "empty": false}, {"key": "3-5", "rack": 3, "floor": 5, "code": "FWJW-121723Z", "roll": 4, "qty": 0, "note": "", "empty": false}, {"key": "3-5", "rack": 3, "floor": 5, "code": "FWJW-121723Z", "roll": 5, "qty": 0, "note": "", "empty": false}, {"key": "3-5", "rack": 3, "floor": 5, "code": "FWJW-121723Z", "roll": 6, "qty": 0, "note": "", "empty": false}, {"key": "3-4", "rack": 3, "floor": 4, "code": "FWJW-121723ZB", "roll": 1, "qty": 0, "note": "", "empty": false}, {"key": "3-4", "rack": 3, "floor": 4, "code": "FWJW-121723ZB", "roll": 2, "qty": 0, "note": "", "empty": false}, {"key": "3-4", "rack": 3, "floor": 4, "code": "FWJW-121723ZB", "roll": 3, "qty": 0, "note": "", "empty": false}, {"key": "3-4", "rack": 3, "floor": 4, "code": "FWJW-121723ZB", "roll": 4, "qty": 0, "note": "", "empty": false}, {"key": "3-4", "rack": 3, "floor": 4, "code": "FWJW-121723ZB", "roll": 5, "qty": 0, "note": "", "empty": false}, {"key": "3-4", "rack": 3, "floor": 4, "code": "FWJW-121723ZB", "roll": 6, "qty": 0, "note": "", "empty": false}, {"key": "3-3", "rack": 3, "floor": 3, "code": "FWJW-121814Z", "roll": 1, "qty": 0, "note": "", "empty": false}, {"key": "3-3", "rack": 3, "floor": 3, "code": "FWJW-121814Z", "roll": 2, "qty": 0, "note": "", "empty": false}, {"key": "3-3", "rack": 3, "floor": 3, "code": "FWJW-121814Z", "roll": 3, "qty": 0, "note": "", "empty": false}, {"key": "3-3", "rack": 3, "floor": 3, "code": "FWJW-121814Z", "roll": 4, "qty": 0, "note": "", "empty": false}, {"key": "3-3", "rack": 3, "floor": 3, "code": "FWJW-121814Z", "roll": 5, "qty": 0, "note": "", "empty": false}, {"key": "3-3", "rack": 3, "floor": 3, "code": "FWJW-121814Z", "roll": 6, "qty": 0, "note": "", "empty": false}, {"key": "3-2", "rack": 3, "floor": 2, "code": "FWJW-131823ZB", "roll": 1, "qty": 0, "note": "", "empty": false}, {"key": "3-2", "rack": 3, "floor": 2, "code": "FWJW-131823ZB", "roll": 2, "qty": 0, "note": "", "empty": false}, {"key": "3-2", "rack": 3, "floor": 2, "code": "FWJW-131823ZB", "roll": 3, "qty": 0, "note": "", "empty": false}, {"key": "3-2", "rack": 3, "floor": 2, "code": "FWJW-131823ZB", "roll": 4, "qty": 0, "note": "", "empty": false}, {"key": "3-2", "rack": 3, "floor": 2, "code": "FWJW-131823ZB", "roll": 5, "qty": 0, "note": "", "empty": false}, {"key": "3-2", "rack": 3, "floor": 2, "code": "FWJW-131823ZB", "roll": 6, "qty": 0, "note": "", "empty": false}, {"key": "3-1", "rack": 3, "floor": 1, "code": "FWJW-132020Z", "roll": 1, "qty": 0, "note": "", "empty": false}, {"key": "3-1", "rack": 3, "floor": 1, "code": "FWJW-132020Z", "roll": 2, "qty": 0, "note": "", "empty": false}, {"key": "3-1", "rack": 3, "floor": 1, "code": "FWJW-132020Z", "roll": 3, "qty": 0, "note": "", "empty": false}, {"key": "3-1", "rack": 3, "floor": 1, "code": "FWJW-132020Z", "roll": 4, "qty": 0, "note": "", "empty": false}, {"key": "3-1", "rack": 3, "floor": 1, "code": "FWJW-132020Z", "roll": 5, "qty": 0, "note": "", "empty": false}, {"key": "3-1", "rack": 3, "floor": 1, "code": "FWJW-132020Z", "roll": 6, "qty": 0, "note": "", "empty": false}, {"key": "4-6", "rack": 4, "floor": 6, "code": "FWJW-141922ZA", "roll": 1, "qty": 0, "note": "", "empty": false}, {"key": "4-6", "rack": 4, "floor": 6, "code": "FWJW-141922ZA", "roll": 2, "qty": 0, "note": "", "empty": false}, {"key": "4-6", "rack": 4, "floor": 6, "code": "FWJW-141922ZA", "roll": 3, "qty": 0, "note": "", "empty": false}, {"key": "4-6", "rack": 4, "floor": 6, "code": "FWJW-141922ZA", "roll": 4, "qty": 0, "note": "", "empty": false}, {"key": "4-6", "rack": 4, "floor": 6, "code": "FWJW-141922ZA", "roll": 5, "qty": 0, "note": "", "empty": false}, {"key": "4-6", "rack": 4, "floor": 6, "code": "FWJW-141922ZA", "roll": 6, "qty": 0, "note": "", "empty": false}, {"key": "4-5", "rack": 4, "floor": 5, "code": "FWJW-141923ZA", "roll": 1, "qty": 0, "note": "", "empty": false}, {"key": "4-5", "rack": 4, "floor": 5, "code": "FWJW-141923ZA", "roll": 2, "qty": 0, "note": "", "empty": false}, {"key": "4-5", "rack": 4, "floor": 5, "code": "FWJW-141923ZA", "roll": 3, "qty": 0, "note": "", "empty": false}, {"key": "4-5", "rack": 4, "floor": 5, "code": "FWJW-141923ZA", "roll": 4, "qty": 0, "note": "", "empty": false}, {"key": "4-5", "rack": 4, "floor": 5, "code": "FWJW-141923ZA", "roll": 5, "qty": 0, "note": "", "empty": false}, {"key": "4-5", "rack": 4, "floor": 5, "code": "FWJW-141923ZA", "roll": 6, "qty": 0, "note": "", "empty": false}, {"key": "4-4", "rack": 4, "floor": 4, "code": "FWJW-142023ZA", "roll": 1, "qty": 0, "note": "", "empty": false}, {"key": "4-4", "rack": 4, "floor": 4, "code": "FWJW-142023ZA", "roll": 2, "qty": 0, "note": "", "empty": false}, {"key": "4-4", "rack": 4, "floor": 4, "code": "FWJW-142023ZA", "roll": 3, "qty": 0, "note": "", "empty": false}, {"key": "4-4", "rack": 4, "floor": 4, "code": "FWJW-142023ZA", "roll": 4, "qty": 0, "note": "", "empty": false}, {"key": "4-4", "rack": 4, "floor": 4, "code": "FWJW-142023ZA", "roll": 5, "qty": 0, "note": "", "empty": false}, {"key": "4-4", "rack": 4, "floor": 4, "code": "FWJW-142023ZA", "roll": 6, "qty": 0, "note": "", "empty": false}, {"key": "4-3", "rack": 4, "floor": 3, "code": "FWJW-152023ZM", "roll": 1, "qty": 0, "note": "", "empty": false}, {"key": "4-3", "rack": 4, "floor": 3, "code": "FWJW-152023ZM", "roll": 2, "qty": 0, "note": "", "empty": false}, {"key": "4-3", "rack": 4, "floor": 3, "code": "FWJW-152023ZM", "roll": 3, "qty": 0, "note": "", "empty": false}, {"key": "4-3", "rack": 4, "floor": 3, "code": "FWJW-152023ZM", "roll": 4, "qty": 0, "note": "", "empty": false}, {"key": "4-3", "rack": 4, "floor": 3, "code": "FWJW-152023ZM", "roll": 5, "qty": 0, "note": "", "empty": false}, {"key": "4-3", "rack": 4, "floor": 3, "code": "FWJW-152023ZM", "roll": 6, "qty": 0, "note": "", "empty": false}, {"key": "4-2", "rack": 4, "floor": 2, "code": "FWJW-152114Z", "roll": 1, "qty": 0, "note": "", "empty": false}, {"key": "4-2", "rack": 4, "floor": 2, "code": "FWJW-152114Z", "roll": 2, "qty": 0, "note": "", "empty": false}, {"key": "4-2", "rack": 4, "floor": 2, "code": "FWJW-152114Z", "roll": 3, "qty": 0, "note": "", "empty": false}, {"key": "4-2", "rack": 4, "floor": 2, "code": "FWJW-152114Z", "roll": 4, "qty": 0, "note": "", "empty": false}, {"key": "4-2", "rack": 4, "floor": 2, "code": "FWJW-152114Z", "roll": 5, "qty": 0, "note": "", "empty": false}, {"key": "4-2", "rack": 4, "floor": 2, "code": "FWJW-152114Z", "roll": 6, "qty": 0, "note": "", "empty": false}, {"key": "4-1", "rack": 4, "floor": 1, "code": "FWJW-152117ZA", "roll": 1, "qty": 0, "note": "", "empty": false}, {"key": "4-1", "rack": 4, "floor": 1, "code": "FWJW-152117ZA", "roll": 2, "qty": 0, "note": "", "empty": false}, {"key": "4-1", "rack": 4, "floor": 1, "code": "FWJW-152117ZA", "roll": 3, "qty": 0, "note": "", "empty": false}, {"key": "4-1", "rack": 4, "floor": 1, "code": "FWJW-152117ZA", "roll": 4, "qty": 0, "note": "", "empty": false}, {"key": "4-1", "rack": 4, "floor": 1, "code": "FWJW-152117ZA", "roll": 5, "qty": 0, "note": "", "empty": false}, {"key": "4-1", "rack": 4, "floor": 1, "code": "FWJW-152117ZA", "roll": 6, "qty": 0, "note": "", "empty": false}, {"key": "5-6", "rack": 5, "floor": 6, "code": "FWJW-152123Z", "roll": 1, "qty": 0, "note": "", "empty": false}, {"key": "5-6", "rack": 5, "floor": 6, "code": "FWJW-152123Z", "roll": 2, "qty": 0, "note": "", "empty": false}, {"key": "5-6", "rack": 5, "floor": 6, "code": "FWJW-152123Z", "roll": 3, "qty": 0, "note": "", "empty": false}, {"key": "5-6", "rack": 5, "floor": 6, "code": "FWJW-152123Z", "roll": 4, "qty": 0, "note": "", "empty": false}, {"key": "5-6", "rack": 5, "floor": 6, "code": "FWJW-152123Z", "roll": 5, "qty": 0, "note": "", "empty": false}, {"key": "5-6", "rack": 5, "floor": 6, "code": "FWJW-152123Z", "roll": 6, "qty": 0, "note": "", "empty": false}, {"key": "5-5", "rack": 5, "floor": 5, "code": "FWJW-162116Z", "roll": 1, "qty": 0, "note": "", "empty": false}, {"key": "5-5", "rack": 5, "floor": 5, "code": "FWJW-162116Z", "roll": 2, "qty": 0, "note": "", "empty": false}, {"key": "5-5", "rack": 5, "floor": 5, "code": "FWJW-162116Z", "roll": 3, "qty": 0, "note": "", "empty": false}, {"key": "5-5", "rack": 5, "floor": 5, "code": "FWJW-162116Z", "roll": 4, "qty": 0, "note": "", "empty": false}, {"key": "5-5", "rack": 5, "floor": 5, "code": "FWJW-162116Z", "roll": 5, "qty": 0, "note": "", "empty": false}, {"key": "5-5", "rack": 5, "floor": 5, "code": "FWJW-162116Z", "roll": 6, "qty": 0, "note": "", "empty": false}, {"key": "5-4", "rack": 5, "floor": 4, "code": "FWJW-162223ZA", "roll": 1, "qty": 0, "note": "", "empty": false}, {"key": "5-4", "rack": 5, "floor": 4, "code": "FWJW-162223ZA", "roll": 2, "qty": 0, "note": "", "empty": false}, {"key": "5-4", "rack": 5, "floor": 4, "code": "FWJW-162223ZA", "roll": 3, "qty": 0, "note": "", "empty": false}, {"key": "5-4", "rack": 5, "floor": 4, "code": "FWJW-162223ZA", "roll": 4, "qty": 0, "note": "", "empty": false}, {"key": "5-4", "rack": 5, "floor": 4, "code": "FWJW-162223ZA", "roll": 5, "qty": 0, "note": "", "empty": false}, {"key": "5-4", "rack": 5, "floor": 4, "code": "FWJW-162223ZA", "roll": 6, "qty": 0, "note": "", "empty": false}, {"key": "5-3", "rack": 5, "floor": 3, "code": "FWJW-162310ZA", "roll": 1, "qty": 0, "note": "", "empty": false}, {"key": "5-3", "rack": 5, "floor": 3, "code": "FWJW-162310ZA", "roll": 2, "qty": 0, "note": "", "empty": false}, {"key": "5-3", "rack": 5, "floor": 3, "code": "FWJW-162310ZA", "roll": 3, "qty": 0, "note": "", "empty": false}, {"key": "5-3", "rack": 5, "floor": 3, "code": "FWJW-162310ZA", "roll": 4, "qty": 0, "note": "", "empty": false}, {"key": "5-3", "rack": 5, "floor": 3, "code": "FWJW-162310ZA", "roll": 5, "qty": 0, "note": "", "empty": false}, {"key": "5-3", "rack": 5, "floor": 3, "code": "FWJW-162310ZA", "roll": 6, "qty": 0, "note": "", "empty": false}, {"key": "5-2", "rack": 5, "floor": 2, "code": "FWJW-162313Z", "roll": 1, "qty": 0, "note": "", "empty": false}, {"key": "5-2", "rack": 5, "floor": 2, "code": "FWJW-162313Z", "roll": 2, "qty": 0, "note": "", "empty": false}, {"key": "5-2", "rack": 5, "floor": 2, "code": "FWJW-162313Z", "roll": 3, "qty": 0, "note": "", "empty": false}, {"key": "5-2", "rack": 5, "floor": 2, "code": "FWJW-162313Z", "roll": 4, "qty": 0, "note": "", "empty": false}, {"key": "5-2", "rack": 5, "floor": 2, "code": "FWJW-162313Z", "roll": 5, "qty": 0, "note": "", "empty": false}, {"key": "5-2", "rack": 5, "floor": 2, "code": "FWJW-162313Z", "roll": 6, "qty": 0, "note": "", "empty": false}, {"key": "5-1", "rack": 5, "floor": 1, "code": "FWJW-182512Z", "roll": 1, "qty": 0, "note": "", "empty": false}, {"key": "5-1", "rack": 5, "floor": 1, "code": "FWJW-182512Z", "roll": 2, "qty": 0, "note": "", "empty": false}, {"key": "5-1", "rack": 5, "floor": 1, "code": "FWJW-182512Z", "roll": 3, "qty": 0, "note": "", "empty": false}, {"key": "5-1", "rack": 5, "floor": 1, "code": "FWJW-182512Z", "roll": 4, "qty": 0, "note": "", "empty": false}, {"key": "5-1", "rack": 5, "floor": 1, "code": "FWJW-182512Z", "roll": 5, "qty": 0, "note": "", "empty": false}, {"key": "5-1", "rack": 5, "floor": 1, "code": "FWJW-182512Z", "roll": 6, "qty": 0, "note": "", "empty": false}, {"key": "6-6", "rack": 6, "floor": 6, "code": "FWJW-182516ZA", "roll": 1, "qty": 0, "note": "", "empty": false}, {"key": "6-6", "rack": 6, "floor": 6, "code": "FWJW-182516ZA", "roll": 2, "qty": 0, "note": "", "empty": false}, {"key": "6-6", "rack": 6, "floor": 6, "code": "FWJW-182516ZA", "roll": 3, "qty": 0, "note": "", "empty": false}, {"key": "6-6", "rack": 6, "floor": 6, "code": "FWJW-182516ZA", "roll": 4, "qty": 0, "note": "", "empty": false}, {"key": "6-6", "rack": 6, "floor": 6, "code": "FWJW-182516ZA", "roll": 5, "qty": 0, "note": "", "empty": false}, {"key": "6-6", "rack": 6, "floor": 6, "code": "FWJW-182516ZA", "roll": 6, "qty": 0, "note": "", "empty": false}, {"key": "6-5", "rack": 6, "floor": 5, "code": "FWJW-182517Z", "roll": 1, "qty": 0, "note": "", "empty": false}, {"key": "6-5", "rack": 6, "floor": 5, "code": "FWJW-182517Z", "roll": 2, "qty": 0, "note": "", "empty": false}, {"key": "6-5", "rack": 6, "floor": 5, "code": "FWJW-182517Z", "roll": 3, "qty": 0, "note": "", "empty": false}, {"key": "6-5", "rack": 6, "floor": 5, "code": "FWJW-182517Z", "roll": 4, "qty": 0, "note": "", "empty": false}, {"key": "6-5", "rack": 6, "floor": 5, "code": "FWJW-182517Z", "roll": 5, "qty": 0, "note": "", "empty": false}, {"key": "6-5", "rack": 6, "floor": 5, "code": "FWJW-182517Z", "roll": 6, "qty": 0, "note": "", "empty": false}, {"key": "6-4", "rack": 6, "floor": 4, "code": "FWJW-202816Z", "roll": 1, "qty": 0, "note": "", "empty": false}, {"key": "6-4", "rack": 6, "floor": 4, "code": "FWJW-202816Z", "roll": 2, "qty": 0, "note": "", "empty": false}, {"key": "6-4", "rack": 6, "floor": 4, "code": "FWJW-202816Z", "roll": 3, "qty": 0, "note": "", "empty": false}, {"key": "6-4", "rack": 6, "floor": 4, "code": "FWJW-202816Z", "roll": 4, "qty": 0, "note": "", "empty": false}, {"key": "6-4", "rack": 6, "floor": 4, "code": "FWJW-202816Z", "roll": 5, "qty": 0, "note": "", "empty": false}, {"key": "6-4", "rack": 6, "floor": 4, "code": "FWJW-202816Z", "roll": 6, "qty": 0, "note": "", "empty": false}, {"key": "6-3", "rack": 6, "floor": 3, "code": "FWJW-223017ZD", "roll": 1, "qty": 0, "note": "", "empty": false}, {"key": "6-3", "rack": 6, "floor": 3, "code": "FWJW-223017ZD", "roll": 2, "qty": 0, "note": "", "empty": false}, {"key": "6-3", "rack": 6, "floor": 3, "code": "FWJW-223017ZD", "roll": 3, "qty": 0, "note": "", "empty": false}, {"key": "6-3", "rack": 6, "floor": 3, "code": "FWJW-223017ZD", "roll": 4, "qty": 0, "note": "", "empty": false}, {"key": "6-3", "rack": 6, "floor": 3, "code": "FWJW-223017ZD", "roll": 5, "qty": 0, "note": "", "empty": false}, {"key": "6-3", "rack": 6, "floor": 3, "code": "FWJW-223017ZD", "roll": 6, "qty": 0, "note": "", "empty": false}, {"key": "6-2", "rack": 6, "floor": 2, "code": "FWJW-233118ZA", "roll": 1, "qty": 0, "note": "", "empty": false}, {"key": "6-2", "rack": 6, "floor": 2, "code": "FWJW-233118ZA", "roll": 2, "qty": 0, "note": "", "empty": false}, {"key": "6-2", "rack": 6, "floor": 2, "code": "FWJW-233118ZA", "roll": 3, "qty": 0, "note": "", "empty": false}, {"key": "6-2", "rack": 6, "floor": 2, "code": "FWJW-233118ZA", "roll": 4, "qty": 0, "note": "", "empty": false}, {"key": "6-2", "rack": 6, "floor": 2, "code": "FWJW-233118ZA", "roll": 5, "qty": 0, "note": "", "empty": false}, {"key": "6-2", "rack": 6, "floor": 2, "code": "FWJW-233118ZA", "roll": 6, "qty": 0, "note": "", "empty": false}, {"key": "6-1", "rack": 6, "floor": 1, "code": "FWJW-253216ZA", "roll": 1, "qty": 0, "note": "", "empty": false}, {"key": "6-1", "rack": 6, "floor": 1, "code": "FWJW-253216ZA", "roll": 2, "qty": 0, "note": "", "empty": false}, {"key": "6-1", "rack": 6, "floor": 1, "code": "FWJW-253216ZA", "roll": 3, "qty": 0, "note": "", "empty": false}, {"key": "6-1", "rack": 6, "floor": 1, "code": "FWJW-253216ZA", "roll": 4, "qty": 0, "note": "", "empty": false}, {"key": "6-1", "rack": 6, "floor": 1, "code": "FWJW-253216ZA", "roll": 5, "qty": 0, "note": "", "empty": false}, {"key": "6-1", "rack": 6, "floor": 1, "code": "FWJW-253216ZA", "roll": 6, "qty": 0, "note": "", "empty": false}, {"key": "7-6", "rack": 7, "floor": 6, "code": "FWJW-253527ZA", "roll": 1, "qty": 0, "note": "", "empty": false}, {"key": "7-6", "rack": 7, "floor": 6, "code": "FWJW-253527ZA", "roll": 2, "qty": 0, "note": "", "empty": false}, {"key": "7-6", "rack": 7, "floor": 6, "code": "FWJW-253527ZA", "roll": 3, "qty": 0, "note": "", "empty": false}, {"key": "7-6", "rack": 7, "floor": 6, "code": "FWJW-253527ZA", "roll": 4, "qty": 0, "note": "", "empty": false}, {"key": "7-6", "rack": 7, "floor": 6, "code": "FWJW-253527ZA", "roll": 5, "qty": 0, "note": "", "empty": false}, {"key": "7-6", "rack": 7, "floor": 6, "code": "FWJW-253527ZA", "roll": 6, "qty": 0, "note": "", "empty": false}, {"key": "7-5", "rack": 7, "floor": 5, "code": "FWJW-263218ZA", "roll": 1, "qty": 0, "note": "", "empty": false}, {"key": "7-5", "rack": 7, "floor": 5, "code": "FWJW-263218ZA", "roll": 2, "qty": 0, "note": "", "empty": false}, {"key": "7-5", "rack": 7, "floor": 5, "code": "FWJW-263218ZA", "roll": 3, "qty": 0, "note": "", "empty": false}, {"key": "7-5", "rack": 7, "floor": 5, "code": "FWJW-263218ZA", "roll": 4, "qty": 0, "note": "", "empty": false}, {"key": "7-5", "rack": 7, "floor": 5, "code": "FWJW-263218ZA", "roll": 5, "qty": 0, "note": "", "empty": false}, {"key": "7-5", "rack": 7, "floor": 5, "code": "FWJW-263218ZA", "roll": 6, "qty": 0, "note": "", "empty": false}, {"key": "7-4", "rack": 7, "floor": 4, "code": "FWJW-283518ZA", "roll": 1, "qty": 0, "note": "", "empty": false}, {"key": "7-4", "rack": 7, "floor": 4, "code": "FWJW-283518ZA", "roll": 2, "qty": 0, "note": "", "empty": false}, {"key": "7-4", "rack": 7, "floor": 4, "code": "FWJW-283518ZA", "roll": 3, "qty": 0, "note": "", "empty": false}, {"key": "7-4", "rack": 7, "floor": 4, "code": "FWJW-283518ZA", "roll": 4, "qty": 0, "note": "", "empty": false}, {"key": "7-4", "rack": 7, "floor": 4, "code": "FWJW-283518ZA", "roll": 5, "qty": 0, "note": "", "empty": false}, {"key": "7-4", "rack": 7, "floor": 4, "code": "FWJW-283518ZA", "roll": 6, "qty": 0, "note": "", "empty": false}, {"key": "7-3", "rack": 7, "floor": 3, "code": "FWJW-283519ZA", "roll": 1, "qty": 0, "note": "", "empty": false}, {"key": "7-3", "rack": 7, "floor": 3, "code": "FWJW-283519ZA", "roll": 2, "qty": 0, "note": "", "empty": false}, {"key": "7-3", "rack": 7, "floor": 3, "code": "FWJW-283519ZA", "roll": 3, "qty": 0, "note": "", "empty": false}, {"key": "7-3", "rack": 7, "floor": 3, "code": "FWJW-283519ZA", "roll": 4, "qty": 0, "note": "", "empty": false}, {"key": "7-3", "rack": 7, "floor": 3, "code": "FWJW-283519ZA", "roll": 5, "qty": 0, "note": "", "empty": false}, {"key": "7-3", "rack": 7, "floor": 3, "code": "FWJW-283519ZA", "roll": 6, "qty": 0, "note": "", "empty": false}, {"key": "7-2", "rack": 7, "floor": 2, "code": "", "roll": 1, "qty": 0, "note": "", "empty": true}, {"key": "7-2", "rack": 7, "floor": 2, "code": "", "roll": 2, "qty": 0, "note": "", "empty": true}, {"key": "7-2", "rack": 7, "floor": 2, "code": "", "roll": 3, "qty": 0, "note": "", "empty": true}, {"key": "7-2", "rack": 7, "floor": 2, "code": "", "roll": 4, "qty": 0, "note": "", "empty": true}, {"key": "7-2", "rack": 7, "floor": 2, "code": "", "roll": 5, "qty": 0, "note": "", "empty": true}, {"key": "7-2", "rack": 7, "floor": 2, "code": "", "roll": 6, "qty": 0, "note": "", "empty": true}, {"key": "7-1", "rack": 7, "floor": 1, "code": "", "roll": 1, "qty": 0, "note": "", "empty": true}, {"key": "7-1", "rack": 7, "floor": 1, "code": "", "roll": 2, "qty": 0, "note": "", "empty": true}, {"key": "7-1", "rack": 7, "floor": 1, "code": "", "roll": 3, "qty": 0, "note": "", "empty": true}, {"key": "7-1", "rack": 7, "floor": 1, "code": "", "roll": 4, "qty": 0, "note": "", "empty": true}, {"key": "7-1", "rack": 7, "floor": 1, "code": "", "roll": 5, "qty": 0, "note": "", "empty": true}, {"key": "7-1", "rack": 7, "floor": 1, "code": "", "roll": 6, "qty": 0, "note": "", "empty": true}, {"key": "8-6", "rack": 8, "floor": 6, "code": "", "roll": 1, "qty": 0, "note": "", "empty": true}, {"key": "8-6", "rack": 8, "floor": 6, "code": "", "roll": 2, "qty": 0, "note": "", "empty": true}, {"key": "8-6", "rack": 8, "floor": 6, "code": "", "roll": 3, "qty": 0, "note": "", "empty": true}, {"key": "8-6", "rack": 8, "floor": 6, "code": "", "roll": 4, "qty": 0, "note": "", "empty": true}, {"key": "8-6", "rack": 8, "floor": 6, "code": "", "roll": 5, "qty": 0, "note": "", "empty": true}, {"key": "8-6", "rack": 8, "floor": 6, "code": "", "roll": 6, "qty": 0, "note": "", "empty": true}, {"key": "8-5", "rack": 8, "floor": 5, "code": "", "roll": 1, "qty": 0, "note": "", "empty": true}, {"key": "8-5", "rack": 8, "floor": 5, "code": "", "roll": 2, "qty": 0, "note": "", "empty": true}, {"key": "8-5", "rack": 8, "floor": 5, "code": "", "roll": 3, "qty": 0, "note": "", "empty": true}, {"key": "8-5", "rack": 8, "floor": 5, "code": "", "roll": 4, "qty": 0, "note": "", "empty": true}, {"key": "8-5", "rack": 8, "floor": 5, "code": "", "roll": 5, "qty": 0, "note": "", "empty": true}, {"key": "8-5", "rack": 8, "floor": 5, "code": "", "roll": 6, "qty": 0, "note": "", "empty": true}, {"key": "8-4", "rack": 8, "floor": 4, "code": "", "roll": 1, "qty": 0, "note": "", "empty": true}, {"key": "8-4", "rack": 8, "floor": 4, "code": "", "roll": 2, "qty": 0, "note": "", "empty": true}, {"key": "8-4", "rack": 8, "floor": 4, "code": "", "roll": 3, "qty": 0, "note": "", "empty": true}, {"key": "8-4", "rack": 8, "floor": 4, "code": "", "roll": 4, "qty": 0, "note": "", "empty": true}, {"key": "8-4", "rack": 8, "floor": 4, "code": "", "roll": 5, "qty": 0, "note": "", "empty": true}, {"key": "8-4", "rack": 8, "floor": 4, "code": "", "roll": 6, "qty": 0, "note": "", "empty": true}, {"key": "8-3", "rack": 8, "floor": 3, "code": "", "roll": 1, "qty": 0, "note": "", "empty": true}, {"key": "8-3", "rack": 8, "floor": 3, "code": "", "roll": 2, "qty": 0, "note": "", "empty": true}, {"key": "8-3", "rack": 8, "floor": 3, "code": "", "roll": 3, "qty": 0, "note": "", "empty": true}, {"key": "8-3", "rack": 8, "floor": 3, "code": "", "roll": 4, "qty": 0, "note": "", "empty": true}, {"key": "8-3", "rack": 8, "floor": 3, "code": "", "roll": 5, "qty": 0, "note": "", "empty": true}, {"key": "8-3", "rack": 8, "floor": 3, "code": "", "roll": 6, "qty": 0, "note": "", "empty": true}, {"key": "8-2", "rack": 8, "floor": 2, "code": "", "roll": 1, "qty": 0, "note": "", "empty": true}, {"key": "8-2", "rack": 8, "floor": 2, "code": "", "roll": 2, "qty": 0, "note": "", "empty": true}, {"key": "8-2", "rack": 8, "floor": 2, "code": "", "roll": 3, "qty": 0, "note": "", "empty": true}, {"key": "8-2", "rack": 8, "floor": 2, "code": "", "roll": 4, "qty": 0, "note": "", "empty": true}, {"key": "8-2", "rack": 8, "floor": 2, "code": "", "roll": 5, "qty": 0, "note": "", "empty": true}, {"key": "8-2", "rack": 8, "floor": 2, "code": "", "roll": 6, "qty": 0, "note": "", "empty": true}, {"key": "8-1", "rack": 8, "floor": 1, "code": "", "roll": 1, "qty": 0, "note": "", "empty": true}, {"key": "8-1", "rack": 8, "floor": 1, "code": "", "roll": 2, "qty": 0, "note": "", "empty": true}, {"key": "8-1", "rack": 8, "floor": 1, "code": "", "roll": 3, "qty": 0, "note": "", "empty": true}, {"key": "8-1", "rack": 8, "floor": 1, "code": "", "roll": 4, "qty": 0, "note": "", "empty": true}, {"key": "8-1", "rack": 8, "floor": 1, "code": "", "roll": 5, "qty": 0, "note": "", "empty": true}, {"key": "8-1", "rack": 8, "floor": 1, "code": "", "roll": 6, "qty": 0, "note": "", "empty": true}];
+
+let data, curRack=1, sel=new Set(), logs=[], hlRack=null, hlFloor=null;
+
+function loadData(){
+  try{
+    const saved=localStorage.getItem(STORAGE_KEY);
+    if(saved){
+      const parsed=JSON.parse(saved);
+      data=parsed.data;
+      logs=parsed.logs||[];
+      showToast('저장된 데이터 불러옴');
+    } else {
+      data=JSON.parse(JSON.stringify(INIT_DATA));
+      logs=[];
+    }
+  } catch(e){
+    data=JSON.parse(JSON.stringify(INIT_DATA));
+    logs=[];
+  }
+}
+
+function saveData(){
+  try{
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({data:data, logs:logs}));
+    const now=new Date();
+    document.getElementById('lastSave').textContent='자동저장 '+pad(now.getHours())+':'+pad(now.getMinutes());
+  } catch(e){ showToast('저장 실패 (저장공간 부족)'); }
+}
+
+function cc(r){
+  if(!r||r.empty) return 'ec';
+  if(r.qty<=1) return 'cr';
+  if(r.qty<=3) return 'lw';
+  return 'ok';
+}
+
+function calcStats(){
+  const occ=data.filter(r=>!r.empty);
+  document.getElementById('sWrn').textContent=occ.filter(r=>r.qty<=1).length;
+}
+
+function buildTabs(){
+  const tc=document.getElementById('tabs'); tc.innerHTML='';
+  const all=document.createElement('button');
+  all.className='tab'+(curRack===0?' active':'');
+  all.textContent='전체보기';
+  all.onclick=function(){curRack=0;curPair=0;sel.clear();hlRack=null;hlFloor=null;renderRack();buildTabs();};
+  tc.appendChild(all);
+  for(let p=1;p<=4;p++){
+    const r1=(p-1)*2+1, r2=r1+1;
+    const w=data.filter(function(d){return (d.rack===r1||d.rack===r2)&&!d.empty&&d.qty<=1;}).length;
+    const b=document.createElement('button');
+    const isActive=(curRack===r1||curRack===r2)&&curRack!==0;
+    b.className='tab'+(isActive?' active':'');
+    b.innerHTML='보관대 '+r1+'-'+r2+(w?'<span class="wb">'+w+'</span>':'');
+    b.onclick=(function(rr1,rr2,pp){return function(){curRack=rr1;curPair=pp;sel.clear();hlRack=null;hlFloor=null;renderRack();buildTabs();};})(r1,r2,p);
+    tc.appendChild(b);
+  }
+}
+
+function sk(f,c){return f+','+c;}
+function toggleSelR(r,f,c){
+  const k=r+','+f+','+c;
+  sel.has(k)?sel.delete(k):sel.add(k);
+  renderRack();
+}
+
+function renderRack(){
+  if(curRack===0){ renderAll(); return; }
+  const rd=data.filter(function(d){return d.rack===curRack;});
+  const occ=rd.filter(function(d){return !d.empty;}).length;
+  const wrn=rd.filter(function(d){return !d.empty&&d.qty<=1;}).length;
+  document.getElementById('bPlus').style.display='';
+  document.getElementById('bMinus').style.display='';
+  document.getElementById('bClr').style.display='';
+  document.querySelector('.sel-row').style.display='';
+  document.getElementById('rTitle').textContent='보관대 '+curRack;
+  document.getElementById('rMeta').textContent=occ+'/'+(FLOORS*COLS)+' · 긴급 '+wrn;
+  const chs=document.getElementById('chs'); chs.innerHTML='';
+  for(let c=1;c<=COLS;c++){const d=document.createElement('div');d.className='ch';d.textContent=c+'롤';chs.appendChild(d);}
+  const area=document.getElementById('floorArea'); area.innerHTML='';
+  for(let f=FLOORS;f>=1;f--){
+    const flItems=data.filter(function(d){return d.rack===curRack&&d.floor===f;});
+    const code=flItems.find(function(d){return !d.empty;})?flItems.find(function(d){return !d.empty;}).code:'';
+    const row=document.createElement('div'); row.className='fr';
+    const fi=document.createElement('div'); fi.className='fi';
+    const flNote=flItems.find(function(d){return d.note&&d.note.trim();});
+    const noteIndicator=flNote?'<span style="font-size:10px;color:#e65100;margin-left:3px">●</span>':'';
+    fi.innerHTML='<span class="fn">'+f+'층</span><span class="fc'+(code?'':' emp')+'" title="'+(code||'미배치')+'" style="'+(code?'cursor:pointer;':'')+'">'+( code?sc(code):'미배치')+noteIndicator+'</span>';
+    if(code){
+      fi.querySelector('.fc').onclick=(function(cc,ff,rr){return function(e){e.stopPropagation();openNotePopup(cc,ff,rr);};})(code,f,curRack);
+    }
+    row.appendChild(fi);
+    const cs=document.createElement('div'); cs.className='cs';
+    for(let c=1;c<=COLS;c++){
+      const item=data.find(function(d){return d.rack===curRack&&d.floor===f&&d.roll===c;});
+      const el=document.createElement('div');
+      el.className='cell '+cc(item);
+      if(sel.has(sk(f,c))) el.classList.add('sel');
+      if(hlRack===curRack&&hlFloor===f) el.classList.add('hl');
+      if(!item||item.empty){
+        el.innerHTML='<span class="rn">'+c+'</span><span class="qn" style="color:#e0e0e0">—</span>';
+      } else {
+        el.innerHTML='<span class="rn">'+c+'롤</span><span class="qn">'+item.qty+'</span><span class="qm">/ '+MAX+'</span>';
+        el.onclick=(function(ff,cc2){return function(){toggleSel(ff,cc2);};})(f,c);
+      }
+      cs.appendChild(el);
+    }
+    row.appendChild(cs);
+    area.appendChild(row);
+  }
+  updateSelUI();
+  renderLog();
+}
+
+function renderAll(){
+  document.getElementById('rTitle').textContent='전체 보관대';
+  const total=data.filter(function(d){return !d.empty;}).length;
+  const wrn=data.filter(function(d){return !d.empty&&d.qty<=1;}).length;
+  document.getElementById('rMeta').textContent='총 '+total+'개 슬롯 사용 · 긴급 '+wrn+'개';
+  document.getElementById('chs').innerHTML='';
+  const area=document.getElementById('floorArea'); area.innerHTML='';
+
+  // 테이블: 열=보관대1~8, 행=층6~1
+  // 전체 wrapper (가로 스크롤 대응)
+  // 앞2자리 prefix 탭 먼저
+  const prefixes=[...new Set(data.filter(function(d){return !d.empty;}).map(function(d){return prefix(d.code);}))].sort();
+  const pfxWrap=document.createElement('div');
+  pfxWrap.style.cssText='display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;align-items:center;row-gap:6px';
+
+  const allBtn=document.createElement('button');
+  allBtn.style.cssText='font-size:12px;padding:5px 13px;border-radius:16px;border:1px solid '+(activePrefix===''?'#1a1a1a':'#ddd')+';background:'+(activePrefix===''?'#1a1a1a':'#fff')+';color:'+(activePrefix===''?'#fff':'#888')+';cursor:pointer';
+  allBtn.textContent='전체';
+  allBtn.onclick=function(){activePrefix='';renderRack();};
+  pfxWrap.appendChild(allBtn);
+  prefixes.forEach(function(p){
+    const b=document.createElement('button');
+    const isAct=activePrefix===p;
+    b.style.cssText='font-size:13px;padding:5px 14px;border-radius:16px;border:1px solid '+(isAct?'#1a1a1a':'#ddd')+';background:'+(isAct?'#1a1a1a':'#fff')+';color:'+(isAct?'#fff':'#555')+';cursor:pointer';
+    b.textContent=p;
+    b.onclick=(function(pp){return function(){activePrefix=pp;renderRack();};})(p);
+    pfxWrap.appendChild(b);
+  });
+  area.appendChild(pfxWrap);
+
+  const wrapper=document.createElement('div');
+  wrapper.style.cssText='overflow-x:auto;-webkit-overflow-scrolling:touch';
+
+  const table=document.createElement('table');
+  table.style.cssText='width:100%;border-collapse:separate;border-spacing:5px;table-layout:fixed;min-width:600px';
+
+  // 헤더행: 빈칸 + 보관대1~8
+  const thead=document.createElement('thead');
+  const hrow=document.createElement('tr');
+
+  // 층 라벨 헤더 (첫번째 열)
+  const thEmpty=document.createElement('th');
+  thEmpty.style.cssText='width:36px;font-size:11px;color:#bbb;font-weight:400;padding:4px 2px;text-align:center';
+  thEmpty.textContent='층';
+  hrow.appendChild(thEmpty);
+
+  for(let r=1;r<=RACKS;r++){
+    const th=document.createElement('th');
+    const rackWrn=data.filter(function(d){return d.rack===r&&!d.empty&&d.qty<=1;}).length;
+    th.style.cssText='font-size:12px;font-weight:600;color:#555;padding:6px 4px;text-align:center';
+    th.innerHTML='보관대'+r+(rackWrn?'<br><span style="font-size:10px;color:#c62828;font-weight:400">긴급'+rackWrn+'</span>':'');
+    hrow.appendChild(th);
+  }
+  thead.appendChild(hrow);
+  table.appendChild(thead);
+
+  // 바디: 층 6~1 행
+  const tbody=document.createElement('tbody');
+  for(let f=FLOORS;f>=1;f--){
+    const tr=document.createElement('tr');
+
+    // 층 번호 셀
+    const tdLbl=document.createElement('td');
+    tdLbl.style.cssText='font-size:11px;color:#aaa;text-align:center;font-weight:500;padding:2px';
+    tdLbl.textContent=f+'층';
+    tr.appendChild(tdLbl);
+
+    for(let r=1;r<=RACKS;r++){
+      const flItems=data.filter(function(d){return d.rack===r&&d.floor===f;});
+      const codeItem=flItems.find(function(d){return !d.empty;});
+      const code=codeItem?codeItem.code:'';
+      const flWrn=flItems.filter(function(d){return !d.empty&&d.qty<=1;}).length;
+      const flNote=flItems.find(function(d){return d.note&&d.note.trim();});
+      const allQtys=flItems.filter(function(d){return !d.empty;}).map(function(d){return d.qty;});
+      const minQty=allQtys.length?Math.min.apply(null,allQtys):null;
+
+      const pfx=prefix(code);
+      const isActive=!activePrefix||(code&&pfx===activePrefix);
+      let bg, border, textColor, subColor;
+      if(!code){
+        bg='#f5f5f3'; border='#e8e8e8'; textColor='#ddd'; subColor='#ddd';
+      } else if(!isActive){
+        bg='#f5f5f3'; border='#e0e0e0'; textColor='#bbb'; subColor='#ccc';
+      } else {
+        if(flWrn>0){bg='#ffebee';border='#ef9a9a';textColor='#1a1a1a';subColor='#c62828';}
+        else if(minQty!==null&&minQty<=3){bg='#fff8e1';border='#ffe082';textColor='#1a1a1a';subColor='#e65100';}
+        else{bg='#e8f5e9';border='#a5d6a7';textColor='#1a1a1a';subColor='#2e7d32';}
+      }
+
+      const td=document.createElement('td');
+      td.style.cssText='padding:3px;vertical-align:middle';
+
+      const inner=document.createElement('div');
+      inner.style.cssText='background:'+bg+';border:1.5px solid '+border+';border-radius:10px;padding:10px 4px;text-align:center;'+(code&&isActive?'cursor:pointer;':'')+'position:relative;min-height:70px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px';
+
+      const noteDot=flNote&&isActive?'<div style="position:absolute;top:4px;right:5px;width:6px;height:6px;background:#e65100;border-radius:50%"></div>':'';
+      const warnBadge=flWrn>0&&isActive?'<div style="font-size:9px;color:'+subColor+';margin-top:2px;font-weight:600">긴급 '+flWrn+'롤</div>':'';
+
+      inner.innerHTML=noteDot
+        +'<div style="font-size:16px;font-weight:700;font-family:\'Pretendard\',sans-serif;color:'+textColor+';line-height:1.25;word-break:break-all;padding:0 4px;letter-spacing:0.2em">'+(code?sc(code):'—')+'</div>'
+        +warnBadge;
+
+      if(code&&isActive){
+        inner.onclick=(function(cc,ff,rr){return function(){openNotePopup(cc,ff,rr);};})(code,f,r);
+      }
+      td.appendChild(inner);
+      tr.appendChild(td);
+    }
+    tbody.appendChild(tr);
+  }
+  table.appendChild(tbody);
+  wrapper.appendChild(table);
+  area.appendChild(wrapper);
+
+  document.getElementById('slbl').innerHTML='';
+  document.getElementById('bPlus').style.display='none';
+  document.getElementById('bMinus').style.display='none';
+  document.getElementById('bClr').style.display='none';
+  document.querySelector('.sel-row').style.display='none';
+  renderLog();
+}
+
+function toggleSel(f,c){
+  const k=sk(f,c);
+  sel.has(k)?sel.delete(k):sel.add(k);
+  renderRack();
+}
+function clearSel(){sel.clear();renderRack();}
+
+function updateSelUI(){
+  const n=sel.size;
+  const bp=document.getElementById('bPlus'),bm=document.getElementById('bMinus'),bc=document.getElementById('bClr'),sl=document.getElementById('slbl');
+  if(n===0){
+    sl.innerHTML='셀을 탭해서 선택하세요 <span style="font-size:11px;color:#bbb">(다중 선택 가능)</span>';
+    bp.disabled=bm.disabled=bc.disabled=true;
+  } else {
+    const codes=[...new Set([...sel].map(function(k){
+      const p=k.split(',');
+      const rr=p.length===3?parseInt(p[0]):curRack;
+      const f=p.length===3?parseInt(p[1]):parseInt(p[0]);
+      const c=p.length===3?parseInt(p[2]):parseInt(p[1]);
+      const item=data.find(function(d){return d.rack===rr&&d.floor===f&&d.roll===c;});
+      return item?item.code:'';
+    }).filter(Boolean))];
+    sl.innerHTML='<strong>'+n+'개 선택</strong> · '+codes.slice(0,2).join(', ')+(codes.length>2?' 외 '+(codes.length-2)+'개':'');
+    bp.disabled=bm.disabled=bc.disabled=false;
+  }
+}
+
+function bulkChange(dir){
+  if(!sel.size) return;
+  const now=new Date();
+  const t=pad(now.getHours())+':'+pad(now.getMinutes());
+  const changed=[];
+  sel.forEach(function(k){
+    const p=k.split(',');
+    const rr=p.length===3?parseInt(p[0]):curRack;
+    const f=p.length===3?parseInt(p[1]):parseInt(p[0]);
+    const c=p.length===3?parseInt(p[2]):parseInt(p[1]);
+    const item=data.find(function(d){return d.rack===rr&&d.floor===f&&d.roll===c;});
+    if(!item||item.empty) return;
+    const prev=item.qty;
+    item.qty=Math.max(0,Math.min(MAX,item.qty+dir));
+    if(item.qty!==prev) changed.push({code:item.code,roll:c,floor:f,prev:prev,next:item.qty});
+  });
+  if(changed.length){
+    const label=dir>0?'입고':'출고';
+    let msg;
+    if(changed.length===1) msg='<strong>'+changed[0].code+'</strong> '+changed[0].roll+'롤 '+changed[0].prev+' → '+changed[0].next;
+    else {
+      const names=changed.slice(0,2).map(function(c){return c.code;}).join(', ');
+      msg='<strong>'+changed.length+'개</strong> '+label+' ('+names+(changed.length>2?' 외':'')+ ')';
+    }
+    if(logs.length&&logs[0].t==='—') logs=[];
+    logs.unshift({t:t,m:msg});
+    if(logs.length>15) logs.pop();
+    showToast(dir>0?'＋1 입고 완료':'－1 출고 완료');
+    saveData();
+  }
+  calcStats();buildTabs();renderRack();
+}
+
+function renderLog(){
+  const ll=document.getElementById('logList');
+  if(!logs.length){ll.innerHTML='<div class="lr"><span class="lrt">—</span><span class="lrm">이력 없음</span></div>';return;}
+  ll.innerHTML=logs.map(function(l){return '<div class="lr"><span class="lrt">'+l.t+'</span><span class="lrm">'+l.m+'</span></div>';}).join('');
+}
+
+function onSearch(val){
+  const dd=document.getElementById('dd');
+  const digits=val.trim().replace(/\D/g,'');
+  if(!digits){dd.classList.remove('open');return;}
+  const seen=new Map();
+  data.filter(function(d){return !d.empty&&d.code.replace(/\D/g,'').includes(digits);}).forEach(function(d){
+    const k=d.rack+','+d.floor;
+    if(!seen.has(k)) seen.set(k,{code:d.code,rack:d.rack,floor:d.floor,total:0,rolls:[],note:d.note||''});
+    seen.get(k).total+=d.qty;
+    seen.get(k).rolls.push(d.qty);
+    if(d.note&&!seen.get(k).note) seen.get(k).note=d.note;
+  });
+  let matches=[...seen.values()];
+  matches.sort(function(a,b){
+    const an=sc(a.code).replace(/\D/g,'');
+    const bn=sc(b.code).replace(/\D/g,'');
+    const aStart=an.startsWith(digits)?0:1;
+    const bStart=bn.startsWith(digits)?0:1;
+    if(aStart!==bStart) return aStart-bStart;
+    return an.localeCompare(bn);
+  });
+  dd.innerHTML='';
+  if(!matches.length){
+    dd.innerHTML='<div style="padding:10px 16px;font-size:13px;color:#aaa">일치하는 형번 없음</div>';
+    dd.classList.add('open'); return;
+  }
+  const hint=document.createElement('div');hint.className='dd-hint';
+  hint.textContent='"'+digits+'" 포함 '+matches.length+'개';
+  dd.appendChild(hint);
+  matches.forEach(function(m){
+    const item=document.createElement('div'); item.className='dd-item';
+    const numPart=sc(m.code).replace(/\D/g,'');
+    const idx=numPart.indexOf(digits);
+    let shortHl=sc(m.code);
+    if(idx>=0){
+      let ni=0,s='',inHL=false;
+      for(let i=0;i<shortHl.length;i++){
+        if(/\d/.test(shortHl[i])){
+          if(ni===idx&&!inHL){s+='<span class="dd-hl">';inHL=true;}
+          s+=shortHl[i]; ni++;
+          if(ni===idx+digits.length&&inHL){s+='</span>';inHL=false;}
+        } else { s+=shortHl[i]; }
+      }
+      if(inHL) s+='</span>';
+      shortHl=s;
+    }
+    const warnCount=m.rolls.filter(function(q){return q<=1;}).length;
+    const warnBadge=warnCount?'<span style="font-size:10px;color:#c62828;background:#ffebee;padding:1px 6px;border-radius:8px;margin-left:6px;font-weight:600">긴급 '+warnCount+'</span>':'';
+    const locBadge='<span style="font-size:12px;color:#888;margin-left:10px;font-weight:500">보관대'+m.rack+' · '+m.floor+'층</span>';
+    const noteText=m.note?'<div style="font-size:11px;color:#e65100;margin-top:3px">'+m.note.slice(0,24)+(m.note.length>24?'…':'')+'</div>':'';
+    item.innerHTML=
+      '<div style="flex:1;min-width:0">'
+        +'<div style="display:flex;align-items:center;flex-wrap:wrap;gap:2px">'
+          +'<span style="font-size:17px;font-weight:700;font-family:\'Pretendard\',sans-serif;color:#1a1a1a;letter-spacing:0.2em">'+shortHl+'</span>'
+          +locBadge
+          +warnBadge
+        +'</div>'
+        +noteText
+      +'</div>';
+    item.onmousedown=(function(rr,ff){return function(){jumpTo(rr,ff);};})(m.rack,m.floor);
+    dd.appendChild(item);
+  });
+  dd.classList.add('open');
+}
+
+function jumpTo(rack,floor){
+  curRack=rack;
+  curPair=Math.ceil(rack/2);
+  sel.clear(); hlRack=rack; hlFloor=floor;
+  document.getElementById('srch').value='';
+  document.getElementById('dd').classList.remove('open');
+  buildTabs(); renderRack();
+  setTimeout(function(){hlRack=null;hlFloor=null;renderRack();},2500);
+}
+function hideDD(){setTimeout(function(){document.getElementById('dd').classList.remove('open');},180);}
+
+function pad(n){return n.toString().padStart(2,'0');}
+
+function exportCSV(){
+  const now=new Date();
+  const stamp=now.getFullYear()+pad(now.getMonth()+1)+pad(now.getDate())+'_'+pad(now.getHours())+pad(now.getMinutes());
+  const header='키,보관대,층,형번,롤번호,수량,특이사항';
+  const sorted=[...data].sort(function(a,b){return a.rack-b.rack||b.floor-a.floor||a.roll-b.roll;});
+  const lines=[header].concat(sorted.map(function(d){
+    return [d.rack+'_'+d.floor, d.rack, d.floor, d.code||'0', d.roll, d.qty, d.note||''].join(',');
+  }));
+  const blob=new Blob(['\uFEFF'+lines.join('\n')],{type:'text/csv;charset=utf-8'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download='storage_'+stamp+'.csv';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  showToast('CSV 저장 완료! ('+stamp+')');
+}
+
+function openAddModal(){
+  const rs=document.getElementById('mRack'); rs.innerHTML='';
+  for(let r=1;r<=RACKS;r++) rs.innerHTML+='<option value="'+r+'">보관대 '+r+'</option>';
+  rs.value=curRack;
+  const fs=document.getElementById('mFloor'); fs.innerHTML='';
+  for(let f=FLOORS;f>=1;f--) fs.innerHTML+='<option value="'+f+'">'+f+'층</option>';
+  const ro=document.getElementById('mRoll'); ro.innerHTML='';
+  for(let c=1;c<=COLS;c++) ro.innerHTML+='<option value="'+c+'">'+c+'번 롤</option>';
+  document.getElementById('mCode').value='';
+  document.getElementById('mQty').value=0;
+  document.getElementById('mErr').textContent='';
+  document.getElementById('modalBg').classList.add('open');
+}
+function closeModal(){document.getElementById('modalBg').classList.remove('open');}
+function bgClose(e){if(e.target===document.getElementById('modalBg')) closeModal();}
+
+function addPart(){
+  const code=document.getElementById('mCode').value.trim();
+  const ri=parseInt(document.getElementById('mRack').value);
+  const fi=parseInt(document.getElementById('mFloor').value);
+  const ci=parseInt(document.getElementById('mRoll').value);
+  const qty=Math.max(0,Math.min(MAX,parseInt(document.getElementById('mQty').value)||0));
+  const err=document.getElementById('mErr');
+  if(!code){err.textContent='형번을 입력해주세요.';return;}
+  const flItems=data.filter(function(d){return d.rack===ri&&d.floor===fi;});
+  const existCode=flItems.find(function(d){return !d.empty;});
+  if(existCode&&existCode.code!==code){err.textContent='이 층은 이미 '+existCode.code+' 형번입니다.';return;}
+  const item=data.find(function(d){return d.rack===ri&&d.floor===fi&&d.roll===ci;});
+  if(item){
+    const prev=item.qty;
+    item.code=code; item.qty=qty; item.empty=false;
+    const now=new Date();
+    const t=pad(now.getHours())+':'+pad(now.getMinutes());
+    if(logs.length&&logs[0].t==='—') logs=[];
+    logs.unshift({t:t,m:'<strong>'+code+'</strong> 보관대'+ri+' '+fi+'층 '+ci+'롤 수정 ('+prev+'→'+qty+')'});
+    if(logs.length>15) logs.pop();
+  }
+  curRack=ri; closeModal(); saveData(); calcStats(); buildTabs(); renderRack();
+  showToast(code+' 저장 완료');
+}
+
+function importCSV(e){
+  const file=e.target.files[0]; if(!file) return;
+  const reader=new FileReader();
+  reader.onload=function(ev){
+    try{
+      let text=ev.target.result;
+      if(text.charCodeAt(0)===0xFEFF) text=text.slice(1);
+      const lines=text.split('\n').filter(function(l){return l.trim();});
+      const newData=[];
+      for(let i=1;i<lines.length;i++){
+        const p=lines[i].split(',');
+        if(p.length<6) continue;
+        const rack=parseInt(p[1]),floor=parseInt(p[2]),code=p[3].trim(),roll=parseInt(p[4]),qty=parseInt(p[5])||0,note=p[6]?p[6].trim():'';
+        const isEmpty=(code==='0'||code===''||code.includes('?'));
+        newData.push({key:p[0].trim(),rack:rack,floor:floor,code:isEmpty?'':code,roll:roll,qty:qty,note:note,empty:isEmpty});
+      }
+      if(newData.length===0){showToast('CSV 파싱 실패: 데이터 없음');return;}
+      if(!confirm('CSV를 불러오면 현재 저장된 수량이 CSV 값으로 덮어씌워집니다.\n계속할까요?')) return;
+      data=newData; sel.clear(); logs=[]; curRack=1;
+      saveData(); calcStats(); buildTabs(); renderRack();
+      showToast('CSV 불러오기 완료 ('+newData.length+'행)');
+    } catch(err){showToast('CSV 오류: '+err.message);}
+  };
+  reader.readAsText(file,'UTF-8');
+  e.target.value='';
+}
+
+function confirmReset(){
+  if(confirm('모든 수량을 초기 데이터로 되돌릴까요?\n이 작업은 되돌릴 수 없습니다.')){
+    data=JSON.parse(JSON.stringify(INIT_DATA));
+    logs=[];sel.clear();
+    saveData(); calcStats(); buildTabs(); renderRack();
+    showToast('초기화 완료');
+  }
+}
+
+function openNotePopup(code, floor, rack){
+  document.getElementById('noteCode').textContent=code;
+  document.getElementById('noteCode').title=code;
+  document.getElementById('noteLoc').textContent='보관대'+rack+' · '+floor+'층';
+  const rollList=document.getElementById('noteRollList');
+  rollList.innerHTML='';
+  const flItems=data.filter(function(d){return d.rack===rack&&d.floor===floor&&!d.empty;});
+  flItems.sort(function(a,b){return a.roll-b.roll;});
+  flItems.forEach(function(d){
+    const hasNote=d.note&&d.note.trim();
+    const qc=d.qty<=1?'#c62828':d.qty<=3?'#e65100':'#2e7d32';
+    const qbg=d.qty<=1?'#ffebee':d.qty<=3?'#fff8e1':'#e8f5e9';
+    const row=document.createElement('div');
+    row.style.cssText='display:flex;align-items:flex-start;gap:12px;padding:12px 14px;background:'+(hasNote?'#fff8f0':'#f9f9f7')+';border:1px solid '+(hasNote?'#ffcc80':'#efefed')+';border-radius:12px';
+    row.innerHTML='<div style="flex-shrink:0;text-align:center">'
+      +'<div style="font-size:11px;color:#aaa;margin-bottom:3px">'+d.roll+'롤</div>'
+      +'<div style="font-size:18px;font-weight:700;color:'+qc+';background:'+qbg+';border-radius:8px;padding:4px 10px;min-width:36px;text-align:center">'+d.qty+'</div>'
+      +'<div style="font-size:9px;color:#ccc;margin-top:2px">/ '+MAX+'</div>'
+      +'</div>'
+      +'<div style="flex:1;padding-top:2px">'
+      +(hasNote
+        ?'<div style="font-size:13px;color:#1a1a1a;line-height:1.6;white-space:pre-wrap">'+d.note+'</div>'
+        :'<div style="font-size:13px;color:#ccc;font-style:italic">특이사항 없음</div>'
+      )
+      +'</div>';
+    rollList.appendChild(row);
+  });
+  if(flItems.length===0){
+    rollList.innerHTML='<div style="font-size:14px;color:#ccc;text-align:center;padding:20px">데이터 없음</div>';
+  }
+  document.getElementById('noteBg').classList.add('open');
+}
+function closeNote(){
+  document.getElementById('noteBg').classList.remove('open');
+}
+
+function showKp(){
+  const kp=document.getElementById('keypad');
+  if(kp) kp.style.display='block';
+  const v=document.getElementById('srch').value;
+  if(v) onSearch(v);
+}
+function hideKp(){
+  setTimeout(function(){
+    const kp=document.getElementById('keypad');
+    if(kp) kp.style.display='none';
+    hideDD();
+  },300);
+}
+function kpPress(n){
+  const inp=document.getElementById('srch');
+  inp.value+=n;
+  onSearch(inp.value);
+}
+function kpBack(){
+  const inp=document.getElementById('srch');
+  inp.value=inp.value.slice(0,-1);
+  onSearch(inp.value);
+}
+function kpClear(){
+  const inp=document.getElementById('srch');
+  inp.value='';
+  onSearch('');
+  document.getElementById('dd').classList.remove('open');
+}
+
+function showToast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.classList.add('show');
+  setTimeout(function(){t.classList.remove('show');},2000);
+}
+
+loadData(); calcStats(); buildTabs(); renderRack();
+</script>
+</body>
+</html>
