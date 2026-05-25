@@ -67,7 +67,7 @@ button{-webkit-appearance:none;appearance:none;outline:none;font-family:'Pretend
 .chr{display:flex;align-items:center;gap:6px;margin-bottom:4px}
 .flp{width:260px;flex-shrink:0}
 .chs{display:flex;gap:3px;flex:1}
-.ch{flex:1;max-width:52px;text-align:center;font-size:10px;color:#bbb}
+.ch{flex:1;max-width:44px;text-align:center;font-size:10px;color:#bbb}
 /* floor rows */
 .fr{display:flex;align-items:center;gap:6px;margin-bottom:4px;min-height:50px}
 .fi{width:260px;flex-shrink:0;display:flex;flex-direction:column;justify-content:center;gap:2px;padding:6px 10px}
@@ -76,7 +76,7 @@ button{-webkit-appearance:none;appearance:none;outline:none;font-family:'Pretend
 .fc.emp{color:#ccc;font-weight:400;font-style:italic}
 .cs{display:flex;gap:3px;flex:1}
 /* cells */
-.cell{flex:1;min-width:0;max-width:52px;border-radius:8px;border:1px solid transparent;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0;padding:3px 1px;transition:transform 0.08s;user-select:none;-webkit-user-select:none;touch-action:manipulation;height:48px}
+.cell{flex:1;min-width:0;max-width:44px;border-radius:8px;border:1px solid transparent;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0;padding:3px 1px;transition:background 0.1s,outline 0.1s;user-select:none;-webkit-user-select:none;touch-action:manipulation;height:48px}
 .cell:active{transform:scale(0.93)}
 .cell.sel{outline:2.5px solid #1a1a1a;z-index:5}
 .cell.hl{outline:2.5px solid #1976d2;animation:pulse 0.7s ease 3}
@@ -412,7 +412,7 @@ function renderAll(){
   wrapper.style.cssText='overflow-x:auto;-webkit-overflow-scrolling:touch';
 
   const table=document.createElement('table');
-  table.style.cssText='width:100%;border-collapse:separate;border-spacing:3px;table-layout:fixed;min-width:720px';
+  table.style.cssText='width:100%;border-collapse:separate;border-spacing:3px;table-layout:fixed;min-width:560px';
 
   // 헤더행: 빈칸 + 보관대1~8
   const thead=document.createElement('thead');
