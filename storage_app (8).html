@@ -1,0 +1,922 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>보관대 재고 관리</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{font-family:'Pretendard',-apple-system,sans-serif;background:#f2f2f0;color:#1a1a1a;font-size:14px}
+
+/* 헤더 */
+.hdr{background:#fff;border-bottom:1px solid #e0e0e0;padding:12px 16px;position:sticky;top:0;z-index:50}
+.hdr-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.hdr-top h1{font-size:16px;font-weight:600}
+.hdr-btns{display:flex;gap:6px}
+.hbtn{font-size:12px;padding:7px 12px;border:1px solid #e0e0e0;border-radius:8px;background:#fff;cursor:pointer;font-weight:500;color:#1a1a1a}
+.hbtn-csv{background:#e8f5e9;color:#2e7d32;border-color:#a5d6a7}
+.hbtn-imp{background:#e3f2fd;color:#1565c0;border-color:#90caf9}
+.hbtn-rst{background:#fff3e0;color:#e65100;border-color:#ffcc80}
+
+/* 검색 */
+.sw{position:relative}
+.sw-input-wrap{position:relative}
+.sw-input-wrap input{width:100%;font-size:16px;font-weight:500;padding:11px 14px 11px 40px;border:2px solid #e0e0e0;border-radius:12px;background:#f7f7f5;color:#1a1a1a;outline:none;letter-spacing:0.05em}
+.sw-input-wrap input:focus{background:#fff;border-color:#1a1a1a}
+.sw-input-wrap{width:100%}
+
+.sw-icon{position:absolute;left:12px;top:50%;transform:translateY(-50%);font-size:16px;pointer-events:none;color:#aaa;z-index:1}
+.dd{position:fixed;top:140px;left:16px;right:212px;background:#fff;border:1.5px solid #e0e0e0;border-radius:12px;z-index:400;max-height:420px;overflow-y:auto;display:none;box-shadow:0 6px 20px rgba(0,0,0,0.12)}
+.dd.open{display:block}
+.dd-hint{font-size:11px;color:#aaa;padding:6px 14px;background:#f9f9f7;border-bottom:1px solid #eee;border-radius:12px 12px 0 0}
+.dd-item{padding:10px 14px;cursor:pointer;border-bottom:1px solid #f2f2f0;display:flex;align-items:center;justify-content:space-between;gap:10px}
+.dd-item:last-child{border-bottom:none}
+.dd-item:active{background:#f5f5f3}
+.dd-code{font-size:17px;font-weight:700;letter-spacing:0.1em;color:#1a1a1a}
+.dd-loc{font-size:12px;color:#888;margin-left:8px;font-weight:400}
+.dd-hl{background:#fff3cd;border-radius:2px;padding:0 1px}
+.dd-warn{font-size:10px;color:#c62828;background:#ffebee;padding:1px 6px;border-radius:6px;margin-left:4px}
+.dd-note{font-size:11px;color:#e65100;margin-top:2px}
+
+/* 키패드 */
+.kp{display:none;position:fixed;top:140px;right:16px;z-index:400;background:#fff;border:1.5px solid #e0e0e0;border-radius:14px;padding:8px;box-shadow:0 6px 24px rgba(0,0,0,0.18);width:180px}
+.kp-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:5px}
+.kbtn{padding:14px 6px;font-size:19px;font-weight:600;font-family:'Pretendard',sans-serif;border:1px solid #e8e8e8;border-radius:8px;background:#fff;cursor:pointer;color:#1a1a1a;text-align:center}
+.kbtn:active{background:#f0f0ee}
+.kbtn-del{background:#f5f5f3;font-size:16px}
+.kbtn-clr{background:#ffebee;color:#c62828;font-size:12px;font-weight:700}
+
+/* 메인 */
+.main{padding:12px 14px}
+.stat-bar{display:inline-flex;align-items:center;gap:10px;background:#fff;border:1px solid #e0e0e0;border-radius:10px;padding:8px 16px;margin-bottom:12px}
+.stat-bar .sl{font-size:12px;color:#888}
+.stat-bar .sv{font-size:20px;font-weight:700;color:#c62828}
+
+/* 범례 */
+.lgnd{display:flex;gap:14px;margin-bottom:12px;flex-wrap:wrap}
+.li{display:flex;align-items:center;gap:5px;font-size:11px;color:#777}
+.ldot{width:12px;height:12px;border-radius:3px}
+
+/* 탭 */
+.tabs{display:flex;gap:5px;flex-wrap:nowrap;overflow-x:auto;margin-bottom:12px;padding-bottom:2px}
+.tabs::-webkit-scrollbar{display:none}
+.tab{font-size:13px;padding:8px 14px;border:1px solid #e0e0e0;border-radius:20px;background:#fff;cursor:pointer;color:#777;white-space:nowrap;flex-shrink:0;font-weight:500}
+.tab.active{background:#1a1a1a;color:#fff;border-color:#1a1a1a;font-weight:600}
+.tab .wb{color:#e53935;font-size:10px;margin-left:2px}
+
+/* 카드 */
+.card{background:#fff;border:1px solid #e0e0e0;border-radius:14px;padding:14px}
+.rack-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+.rack-head h2{font-size:15px;font-weight:600}
+.rack-meta{font-size:12px;color:#888}
+
+/* 개별 보관대 레이아웃 */
+.floor-row{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.floor-info{width:180px;flex-shrink:0;padding:0 4px}
+.floor-num{font-size:11px;color:#bbb;margin-bottom:2px}
+.floor-code{font-size:22px;font-weight:700;color:#1a1a1a;letter-spacing:0.1em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer;line-height:1.2}
+.floor-code.empty{color:#ddd;font-size:14px;font-weight:400;cursor:default}
+.floor-note-dot{display:inline-block;width:7px;height:7px;background:#e65100;border-radius:50%;margin-left:5px;vertical-align:middle}
+.roll-wrap{display:flex;gap:5px;flex:1}
+
+/* 롤 셀 - 핵심: 고정 크기, 절대 안 변함 */
+.roll-col{display:flex;flex-direction:column;align-items:center;flex:1;max-width:48px}
+.roll-label{font-size:9px;color:#ccc;margin-bottom:3px;height:12px;line-height:12px;text-align:center;width:100%}
+.roll-cell{
+  width:100%;
+  height:44px;
+  border-radius:8px;
+  border:2px solid #e0e0e0;
+  background:#fff;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  cursor:pointer;
+  font-size:18px;
+  font-weight:700;
+  font-family:'Pretendard',sans-serif;
+  color:#1a1a1a;
+  position:relative;
+}
+.roll-cell.ok{border-color:#43a047;color:#2e7d32}
+.roll-cell.lw{border-color:#ffa000;color:#e65100}
+.roll-cell.cr{border-color:#e53935;color:#c62828}
+.roll-cell.em{border-color:#e8e8e8;color:#ddd;cursor:default}
+.roll-cell.sel{background:#e3f2fd;border-color:#1976d2 !important;border-width:3px !important;box-shadow:0 0 0 2px #90caf9}
+.floor-code.hl{color:#ff6f00 !important;text-shadow:0 0 8px rgba(255,111,0,0.35);animation:hlpulse 1.4s ease-in-out infinite}
+@keyframes hlpulse{0%,100%{opacity:1}50%{opacity:0.6}}
+.roll-cell.sel.ok{color:#2e7d32}
+.roll-cell.sel.lw{color:#e65100}
+.roll-cell.sel.cr{color:#c62828}
+.roll-cell.sel.em{color:#aaa}
+
+/* 액션바 */
+.abar{margin-top:12px;padding-top:12px;border-top:1px solid #f0f0f0}
+.sel-info{font-size:13px;color:#888;margin-bottom:8px}
+.sel-info strong{color:#1a1a1a}
+.btn-row{display:flex;gap:8px}
+.abtn{flex:1;padding:12px;border-radius:10px;border:1.5px solid;cursor:pointer;font-size:15px;font-weight:600;font-family:'Pretendard',sans-serif}
+.abtn-plus{background:#e8f5e9;border-color:#a5d6a7;color:#2e7d32}
+.abtn-minus{background:#ffebee;border-color:#ef9a9a;color:#c62828}
+.abtn-clr{background:#f5f5f3;border-color:#e0e0e0;color:#777;flex:0.5}
+.abtn:disabled{opacity:0.3;cursor:default}
+
+/* 이력 */
+.log-wrap{background:#f9f9f7;border-radius:10px;padding:10px 14px;margin-top:12px}
+.log-title{font-size:11px;color:#aaa;font-weight:500;margin-bottom:5px}
+.log-row{font-size:12px;color:#666;display:flex;gap:8px;padding:2px 0}
+.log-t{color:#ccc;width:38px;flex-shrink:0}
+.log-m strong{color:#1a1a1a;font-weight:600}
+
+/* 전체보기 */
+.all-filter{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
+.pfx-btn{font-size:13px;padding:5px 13px;border-radius:16px;border:1px solid #ddd;background:#fff;color:#555;cursor:pointer}
+.pfx-btn.active{background:#1a1a1a;color:#fff;border-color:#1a1a1a}
+.all-table{overflow-x:auto;-webkit-overflow-scrolling:touch}
+.all-table table{width:100%;border-collapse:separate;border-spacing:3px;table-layout:fixed}
+.all-table th{font-size:11px;font-weight:600;color:#555;padding:4px 2px;text-align:center}
+.all-table td{padding:2px;vertical-align:middle}
+.all-th-lbl{width:22px;font-size:10px;color:#aaa;font-weight:400}
+.all-cell{
+  border-radius:8px;
+  border:2px solid #e0e0e0;
+  background:#fff;
+  height:40px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:12px;
+  font-weight:700;
+  font-family:'Pretendard',sans-serif;
+  color:#1a1a1a;
+  letter-spacing:0.05em;
+  cursor:pointer;
+  position:relative;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  padding:0 4px;
+}
+.all-cell.ok{border-color:#43a047}
+.all-cell.lw{border-color:#ffa000}
+.all-cell.cr{border-color:#e53935}
+.all-cell.em{border-color:#ebebeb;color:#ddd;cursor:default}
+.all-cell.dim{border-color:#ebebeb;color:#ccc;background:#f9f9f9;cursor:default}
+.all-note-dot{position:absolute;top:3px;right:3px;width:5px;height:5px;background:#e65100;border-radius:50%}
+
+/* 팝업 */
+.popup-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:300;align-items:center;justify-content:center;padding:16px}
+.popup-bg.open{display:flex}
+.popup{background:#fff;border-radius:18px;width:100%;max-width:460px;max-height:85vh;display:flex;flex-direction:column;overflow:hidden}
+.popup-head{padding:18px 20px 14px;border-bottom:1px solid #f0f0f0;flex-shrink:0}
+.popup-code{font-size:20px;font-weight:700;letter-spacing:0.1em}
+.popup-loc{font-size:12px;color:#aaa;margin-top:2px}
+.popup-close{background:none;border:none;font-size:20px;color:#bbb;cursor:pointer;padding:0}
+.popup-body{overflow-y:auto;padding:14px 20px;flex:1}
+.popup-roll{display:flex;align-items:flex-start;gap:12px;padding:10px 12px;border-radius:10px;margin-bottom:6px}
+.popup-roll.has-note{background:#fff8f0;border:1px solid #ffcc80}
+.popup-roll.no-note{background:#f9f9f7;border:1px solid #efefed}
+.popup-roll-num{font-size:10px;color:#aaa;margin-bottom:3px;text-align:center}
+.popup-roll-qty{font-size:20px;font-weight:700;text-align:center;min-width:36px;padding:4px 8px;border-radius:7px}
+.popup-roll-note{font-size:13px;color:#1a1a1a;line-height:1.5}
+.popup-roll-nonote{font-size:13px;color:#ccc;font-style:italic}
+.popup-foot{padding:14px 20px;border-top:1px solid #f0f0f0;flex-shrink:0}
+.popup-foot button{width:100%;padding:13px;background:#1a1a1a;color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;font-family:'Pretendard',sans-serif}
+
+/* 부품추가 모달 */
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:300;align-items:flex-end;justify-content:center}
+.modal-bg.open{display:flex}
+.modal{background:#fff;border-radius:18px 18px 0 0;padding:20px 18px 36px;width:100%;max-width:480px}
+.modal h3{font-size:15px;font-weight:600;margin-bottom:14px}
+.mf{margin-bottom:10px}
+.mf label{font-size:11px;color:#888;display:block;margin-bottom:3px}
+.mf input,.mf select{width:100%;font-size:14px;padding:9px 11px;border:1px solid #e0e0e0;border-radius:9px;background:#f9f9f7;color:#1a1a1a;outline:none;font-family:'Pretendard',sans-serif}
+.mf input:focus,.mf select:focus{background:#fff;border-color:#999}
+.m-btns{display:flex;gap:8px;margin-top:14px}
+.m-btns button{flex:1;padding:11px;border-radius:10px;cursor:pointer;font-size:14px;font-weight:500;font-family:'Pretendard',sans-serif}
+.m-cancel{background:#f5f5f3;border:1px solid #e0e0e0;color:#777}
+.m-ok{background:#1a1a1a;border:none;color:#fff}
+.m-err{font-size:11px;color:#c62828;margin-top:6px;min-height:14px}
+
+/* 토스트 */
+.toast{position:fixed;bottom:28px;left:50%;transform:translateX(-50%);background:rgba(26,26,26,0.9);color:#fff;padding:10px 20px;border-radius:20px;font-size:13px;opacity:0;transition:opacity .25s;pointer-events:none;z-index:999;white-space:nowrap}
+.toast.show{opacity:1}
+
+input[type=file]{display:none}
+button{font-family:'Pretendard',sans-serif;-webkit-appearance:none;appearance:none;outline:none}
+</style>
+</head>
+<body>
+
+<div class="hdr">
+  <div class="hdr-top">
+    <h1>📦 보관대 재고 관리</h1>
+    <div class="hdr-btns">
+      <button class="hbtn" onclick="openAddModal()">＋</button>
+      <button class="hbtn hbtn-csv" onclick="exportCSV()">💾 저장</button>
+      <button class="hbtn hbtn-imp" onclick="document.getElementById('fi').click()">📂 불러오기</button>
+      <button class="hbtn hbtn-rst" onclick="confirmReset()">↺</button>
+      <input type="file" id="fi" accept=".csv" onchange="importCSV(event)">
+    </div>
+  </div>
+  <div class="sw">
+    <div class="sw-input-wrap">
+      <span class="sw-icon">🔍</span>
+      <input id="srch" type="text" placeholder="형번 입력 (예: 101515)" autocomplete="off"
+        oninput="onSearch(this.value)" onfocus="showKp()" onblur="hideKp()">
+      <div class="dd" id="dd"></div>
+    </div>
+    <div class="kp" id="kp">
+      <div class="kp-grid">
+        <button class="kbtn" onmousedown="ev(event);kp_press('7')">7</button>
+        <button class="kbtn" onmousedown="ev(event);kp_press('8')">8</button>
+        <button class="kbtn" onmousedown="ev(event);kp_press('9')">9</button>
+        <button class="kbtn" onmousedown="ev(event);kp_press('4')">4</button>
+        <button class="kbtn" onmousedown="ev(event);kp_press('5')">5</button>
+        <button class="kbtn" onmousedown="ev(event);kp_press('6')">6</button>
+        <button class="kbtn" onmousedown="ev(event);kp_press('1')">1</button>
+        <button class="kbtn" onmousedown="ev(event);kp_press('2')">2</button>
+        <button class="kbtn" onmousedown="ev(event);kp_press('3')">3</button>
+        <button class="kbtn kbtn-del" onmousedown="ev(event);kp_back()">⌫</button>
+        <button class="kbtn" onmousedown="ev(event);kp_press('0')">0</button>
+        <button class="kbtn kbtn-clr" onmousedown="ev(event);kp_clear()">지우기</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="main">
+  <div class="stat-bar">
+    <span class="sl">긴급 재고</span>
+    <span class="sv" id="sWrn">—</span>
+  </div>
+
+  <div class="lgnd">
+    <div class="li"><div class="ldot" style="border:2px solid #43a047;background:#fff"></div>충분 (3개)</div>
+    <div class="li"><div class="ldot" style="border:2px solid #ffa000;background:#fff"></div>부족 (2개)</div>
+    <div class="li"><div class="ldot" style="border:2px solid #e53935;background:#fff"></div>긴급 (0~1개)</div>
+  </div>
+
+  <div class="tabs" id="tabs"></div>
+
+  <div class="card" id="card">
+    <div class="rack-head">
+      <h2 id="rTitle">보관대 1</h2>
+      <span class="rack-meta" id="rMeta"></span>
+    </div>
+    <div id="rackBody"></div>
+    <div class="abar">
+      <div class="sel-info" id="selInfo">셀을 탭해서 선택하세요</div>
+      <div class="btn-row">
+        <button class="abtn abtn-plus" id="bPlus" disabled onclick="bulkChange(1)">＋ 입고</button>
+        <button class="abtn abtn-minus" id="bMinus" disabled onclick="bulkChange(-1)">－ 출고</button>
+        <button class="abtn abtn-clr" id="bClr" disabled onclick="clearSel()">완료 / 선택해제</button>
+      </div>
+    </div>
+    <div class="log-wrap">
+      <div class="log-title">변경 이력</div>
+      <div id="logList"></div>
+    </div>
+  </div>
+</div>
+
+<!-- 특이사항 팝업 -->
+<div class="popup-bg" id="popupBg" onclick="if(event.target===this)closePopup()">
+  <div class="popup">
+    <div class="popup-head" style="display:flex;justify-content:space-between;align-items:flex-start">
+      <div><div class="popup-code" id="popCode"></div><div class="popup-loc" id="popLoc"></div></div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <button id="histBtn" onclick="toggleHistView()" style="font-size:12px;padding:5px 12px;border:1px solid #e0e0e0;border-radius:8px;background:#fff;cursor:pointer;color:#555;font-family:Pretendard,sans-serif">이력 조회</button>
+        <button class="popup-close" onclick="closePopup()">×</button>
+      </div>
+    </div>
+    <div class="popup-body" id="popBody"></div>
+    <div id="histPanel" style="display:none;border-top:1px solid #f0f0f0;max-height:320px;overflow-y:auto">
+      <div style="padding:12px 16px 6px;font-size:12px;font-weight:600;color:#aaa">변경 이력</div>
+      <div id="histList" style="padding:0 16px 14px"></div>
+    </div>
+    <div class="popup-foot"><button onclick="closePopup()">닫기</button></div>
+  </div>
+</div>
+
+<!-- 부품 추가 모달 -->
+<div class="modal-bg" id="modalBg" onclick="if(event.target===this)closeModal()">
+  <div class="modal">
+    <h3>부품 추가</h3>
+    <div class="mf"><label>형번</label><input id="mCode" type="text" placeholder="예: FWJW-101515Z"></div>
+    <div class="mf"><label>보관대</label><select id="mRack"></select></div>
+    <div class="mf"><label>층</label><select id="mFloor"></select></div>
+    <div class="mf"><label>롤 번호</label><select id="mRoll"></select></div>
+    <div class="mf"><label>수량 (0~3)</label><input id="mQty" type="number" min="0" max="3" value="0"></div>
+    <div class="m-btns">
+      <button class="m-cancel" onclick="closeModal()">취소</button>
+      <button class="m-ok" onclick="addPart()">저장</button>
+    </div>
+    <div class="m-err" id="mErr"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const RACKS=8,FLOORS=6,ROLLS=6,MAX=3,SK='storage_v2';
+let data=[{"rack": 1, "floor": 6, "code": "FWJW-101515Z", "roll": 1, "qty": 0, "note": "", "empty": false}, {"rack": 1, "floor": 6, "code": "FWJW-101515Z", "roll": 2, "qty": 0, "note": "", "empty": false}, {"rack": 1, "floor": 6, "code": "FWJW-101515Z", "roll": 3, "qty": 0, "note": "", "empty": false}, {"rack": 1, "floor": 6, "code": "FWJW-101515Z", "roll": 4, "qty": 0, "note": "", "empty": false}, {"rack": 1, "floor": 6, "code": "FWJW-101515Z", "roll": 5, "qty": 0, "note": "", "empty": false}, {"rack": 1, "floor": 6, "code": "FWJW-101515Z", "roll": 6, "qty": 0, "note": "", "empty": false}, {"rack": 1, "floor": 5, "code": "FWJW-101516ZA", "roll": 1, "qty": 0, "note": "", "empty": false}, {"rack": 1, "floor": 5, "code": "FWJW-101516ZA", "roll": 2, "qty": 0, "note": "", "empty": false}, {"rack": 1, "floor": 5, "code": "FWJW-101516ZA", "roll": 3, "qty": 0, "note": "", "empty": false}, {"rack": 1, "floor": 5, "code": "FWJW-101516ZA", "roll": 4, "qty": 0, "note": "", "empty": false}, {"rack": 1, "floor": 5, "code": "FWJW-101516ZA", "roll": 5, "qty": 0, "note": "", "empty": false}, {"rack": 1, "floor": 5, "code": "FWJW-101516ZA", "roll": 6, "qty": 0, "note": "", "empty": false}, {"rack": 1, "floor": 4, "code": "FWJW-101517ZA", "roll": 1, "qty": 0, "note": "", "empty": false}, {"rack": 1, "floor": 4, "code": "FWJW-101517ZA", "roll": 2, "qty": 0, "note": "", "empty": false}, {"rack": 1, "floor": 4, "code": "FWJW-101517ZA", "roll": 3, "qty": 0, "note": "", "empty": false}, {"rack": 1, "floor": 4, "code": "FWJW-101517ZA", "roll": 4, "qty": 0, "note": "", "empty": false}, {"rack": 1, "floor": 4, "code": "FWJW-101517ZA", "roll": 5, "qty": 0, "note": "", "empty": false}, {"rack": 1, "floor": 4, "code": "FWJW-101517ZA", "roll": 6, "qty": 0, "note": "", "empty": false}, {"rack": 1, "floor": 3, "code": "", "roll": 1, "qty": 0, "note": "", "empty": true}, {"rack": 1, "floor": 3, "code": "", "roll": 2, "qty": 0, "note": "", "empty": true}, {"rack": 1, "floor": 3, "code": "", "roll": 3, "qty": 0, "note": "", "empty": true}, {"rack": 1, "floor": 3, "code": "", "roll": 4, "qty": 0, "note": "", "empty": true}, {"rack": 1, "floor": 3, "code": "", "roll": 5, "qty": 0, "note": "", "empty": true}, {"rack": 1, "floor": 3, "code": "", "roll": 6, "qty": 0, "note": "", "empty": true}, {"rack": 1, "floor": 2, "code": "FWJW-101525ZA", "roll": 1, "qty": 0, "note": "", "empty": false}, {"rack": 1, "floor": 2, "code": "FWJW-101525ZA", "roll": 2, "qty": 0, "note": "", "empty": false}, {"rack": 1, "floor": 2, "code": "FWJW-101525ZA", "roll": 3, "qty": 0, "note": "", "empty": false}, {"rack": 1, "floor": 2, "code": "FWJW-101525ZA", "roll": 4, "qty": 0, "note": "", "empty": false}, {"rack": 1, "floor": 2, "code": "FWJW-101525ZA", "roll": 5, "qty": 0, "note": "", "empty": false}, {"rack": 1, "floor": 2, "code": "FWJW-101525ZA", "roll": 6, "qty": 0, "note": "", "empty": false}, {"rack": 1, "floor": 1, "code": "FWJW-101624ZJ", "roll": 1, "qty": 0, "note": "", "empty": false}, {"rack": 1, "floor": 1, "code": "FWJW-101624ZJ", "roll": 2, "qty": 0, "note": "", "empty": false}, {"rack": 1, "floor": 1, "code": "FWJW-101624ZJ", "roll": 3, "qty": 0, "note": "", "empty": false}, {"rack": 1, "floor": 1, "code": "FWJW-101624ZJ", "roll": 4, "qty": 0, "note": "", "empty": false}, {"rack": 1, "floor": 1, "code": "FWJW-101624ZJ", "roll": 5, "qty": 0, "note": "", "empty": false}, {"rack": 1, "floor": 1, "code": "FWJW-101624ZJ", "roll": 6, "qty": 0, "note": "", "empty": false}, {"rack": 2, "floor": 6, "code": "FWJW-111519ZB", "roll": 1, "qty": 0, "note": "", "empty": false}, {"rack": 2, "floor": 6, "code": "FWJW-111519ZB", "roll": 2, "qty": 0, "note": "", "empty": false}, {"rack": 2, "floor": 6, "code": "FWJW-111519ZB", "roll": 3, "qty": 0, "note": "", "empty": false}, {"rack": 2, "floor": 6, "code": "FWJW-111519ZB", "roll": 4, "qty": 0, "note": "", "empty": false}, {"rack": 2, "floor": 6, "code": "FWJW-111519ZB", "roll": 5, "qty": 0, "note": "", "empty": false}, {"rack": 2, "floor": 6, "code": "FWJW-111519ZB", "roll": 6, "qty": 0, "note": "", "empty": false}, {"rack": 2, "floor": 5, "code": "FWJW-111617ZB", "roll": 1, "qty": 0, "note": "", "empty": false}, {"rack": 2, "floor": 5, "code": "FWJW-111617ZB", "roll": 2, "qty": 0, "note": "", "empty": false}, {"rack": 2, "floor": 5, "code": "FWJW-111617ZB", "roll": 3, "qty": 0, "note": "", "empty": false}, {"rack": 2, "floor": 5, "code": "FWJW-111617ZB", "roll": 4, "qty": 0, "note": "", "empty": false}, {"rack": 2, "floor": 5, "code": "FWJW-111617ZB", "roll": 5, "qty": 0, "note": "", "empty": false}, {"rack": 2, "floor": 5, "code": "FWJW-111617ZB", "roll": 6, "qty": 0, "note": "", "empty": false}, {"rack": 2, "floor": 4, "code": "FWJW-111619ZB", "roll": 1, "qty": 0, "note": "", "empty": false}, {"rack": 2, "floor": 4, "code": "FWJW-111619ZB", "roll": 2, "qty": 0, "note": "", "empty": false}, {"rack": 2, "floor": 4, "code": "FWJW-111619ZB", "roll": 3, "qty": 0, "note": "", "empty": false}, {"rack": 2, "floor": 4, "code": "FWJW-111619ZB", "roll": 4, "qty": 0, "note": "", "empty": false}, {"rack": 2, "floor": 4, "code": "FWJW-111619ZB", "roll": 5, "qty": 0, "note": "", "empty": false}, {"rack": 2, "floor": 4, "code": "FWJW-111619ZB", "roll": 6, "qty": 0, "note": "", "empty": false}, {"rack": 2, "floor": 3, "code": "FWJW-111619ZD", "roll": 1, "qty": 0, "note": "", "empty": false}, {"rack": 2, "floor": 3, "code": "FWJW-111619ZD", "roll": 2, "qty": 0, "note": "", "empty": false}, {"rack": 2, "floor": 3, "code": "FWJW-111619ZD", "roll": 3, "qty": 0, "note": "", "empty": false}, {"rack": 2, "floor": 3, "code": "FWJW-111619ZD", "roll": 4, "qty": 0, "note": "", "empty": false}, {"rack": 2, "floor": 3, "code": "FWJW-111619ZD", "roll": 5, "qty": 0, "note": "", "empty": false}, {"rack": 2, "floor": 3, "code": "FWJW-111619ZD", "roll": 6, "qty": 0, "note": "", "empty": false}, {"rack": 2, "floor": 2, "code": "FWJW-111620ZD", "roll": 1, "qty": 0, "note": "", "empty": false}, {"rack": 2, "floor": 2, "code": "FWJW-111620ZD", "roll": 2, "qty": 0, "note": "", "empty": false}, {"rack": 2, "floor": 2, "code": "FWJW-111620ZD", "roll": 3, "qty": 0, "note": "", "empty": false}, {"rack": 2, "floor": 2, "code": "FWJW-111620ZD", "roll": 4, "qty": 0, "note": "", "empty": false}, {"rack": 2, "floor": 2, "code": "FWJW-111620ZD", "roll": 5, "qty": 0, "note": "", "empty": false}, {"rack": 2, "floor": 2, "code": "FWJW-111620ZD", "roll": 6, "qty": 0, "note": "", "empty": false}, {"rack": 2, "floor": 1, "code": "FWJW-111620ZA", "roll": 1, "qty": 0, "note": "", "empty": false}, {"rack": 2, "floor": 1, "code": "FWJW-111620ZA", "roll": 2, "qty": 0, "note": "", "empty": false}, {"rack": 2, "floor": 1, "code": "FWJW-111620ZA", "roll": 3, "qty": 0, "note": "", "empty": false}, {"rack": 2, "floor": 1, "code": "FWJW-111620ZA", "roll": 4, "qty": 0, "note": "", "empty": false}, {"rack": 2, "floor": 1, "code": "FWJW-111620ZA", "roll": 5, "qty": 0, "note": "", "empty": false}, {"rack": 2, "floor": 1, "code": "FWJW-111620ZA", "roll": 6, "qty": 0, "note": "", "empty": false}, {"rack": 3, "floor": 6, "code": "FWJW-121722Z", "roll": 1, "qty": 0, "note": "", "empty": false}, {"rack": 3, "floor": 6, "code": "FWJW-121722Z", "roll": 2, "qty": 0, "note": "", "empty": false}, {"rack": 3, "floor": 6, "code": "FWJW-121722Z", "roll": 3, "qty": 0, "note": "", "empty": false}, {"rack": 3, "floor": 6, "code": "FWJW-121722Z", "roll": 4, "qty": 0, "note": "", "empty": false}, {"rack": 3, "floor": 6, "code": "FWJW-121722Z", "roll": 5, "qty": 0, "note": "", "empty": false}, {"rack": 3, "floor": 6, "code": "FWJW-121722Z", "roll": 6, "qty": 0, "note": "", "empty": false}, {"rack": 3, "floor": 5, "code": "FWJW-121723Z", "roll": 1, "qty": 0, "note": "", "empty": false}, {"rack": 3, "floor": 5, "code": "FWJW-121723Z", "roll": 2, "qty": 0, "note": "", "empty": false}, {"rack": 3, "floor": 5, "code": "FWJW-121723Z", "roll": 3, "qty": 0, "note": "", "empty": false}, {"rack": 3, "floor": 5, "code": "FWJW-121723Z", "roll": 4, "qty": 0, "note": "", "empty": false}, {"rack": 3, "floor": 5, "code": "FWJW-121723Z", "roll": 5, "qty": 0, "note": "", "empty": false}, {"rack": 3, "floor": 5, "code": "FWJW-121723Z", "roll": 6, "qty": 0, "note": "", "empty": false}, {"rack": 3, "floor": 4, "code": "FWJW-121723ZB", "roll": 1, "qty": 0, "note": "", "empty": false}, {"rack": 3, "floor": 4, "code": "FWJW-121723ZB", "roll": 2, "qty": 0, "note": "", "empty": false}, {"rack": 3, "floor": 4, "code": "FWJW-121723ZB", "roll": 3, "qty": 0, "note": "", "empty": false}, {"rack": 3, "floor": 4, "code": "FWJW-121723ZB", "roll": 4, "qty": 0, "note": "", "empty": false}, {"rack": 3, "floor": 4, "code": "FWJW-121723ZB", "roll": 5, "qty": 0, "note": "", "empty": false}, {"rack": 3, "floor": 4, "code": "FWJW-121723ZB", "roll": 6, "qty": 0, "note": "", "empty": false}, {"rack": 3, "floor": 3, "code": "FWJW-121814Z", "roll": 1, "qty": 0, "note": "", "empty": false}, {"rack": 3, "floor": 3, "code": "FWJW-121814Z", "roll": 2, "qty": 0, "note": "", "empty": false}, {"rack": 3, "floor": 3, "code": "FWJW-121814Z", "roll": 3, "qty": 0, "note": "", "empty": false}, {"rack": 3, "floor": 3, "code": "FWJW-121814Z", "roll": 4, "qty": 0, "note": "", "empty": false}, {"rack": 3, "floor": 3, "code": "FWJW-121814Z", "roll": 5, "qty": 0, "note": "", "empty": false}, {"rack": 3, "floor": 3, "code": "FWJW-121814Z", "roll": 6, "qty": 0, "note": "", "empty": false}, {"rack": 3, "floor": 2, "code": "FWJW-131823ZB", "roll": 1, "qty": 0, "note": "", "empty": false}, {"rack": 3, "floor": 2, "code": "FWJW-131823ZB", "roll": 2, "qty": 0, "note": "", "empty": false}, {"rack": 3, "floor": 2, "code": "FWJW-131823ZB", "roll": 3, "qty": 0, "note": "", "empty": false}, {"rack": 3, "floor": 2, "code": "FWJW-131823ZB", "roll": 4, "qty": 0, "note": "", "empty": false}, {"rack": 3, "floor": 2, "code": "FWJW-131823ZB", "roll": 5, "qty": 0, "note": "", "empty": false}, {"rack": 3, "floor": 2, "code": "FWJW-131823ZB", "roll": 6, "qty": 0, "note": "", "empty": false}, {"rack": 3, "floor": 1, "code": "FWJW-132020Z", "roll": 1, "qty": 0, "note": "", "empty": false}, {"rack": 3, "floor": 1, "code": "FWJW-132020Z", "roll": 2, "qty": 0, "note": "", "empty": false}, {"rack": 3, "floor": 1, "code": "FWJW-132020Z", "roll": 3, "qty": 0, "note": "", "empty": false}, {"rack": 3, "floor": 1, "code": "FWJW-132020Z", "roll": 4, "qty": 0, "note": "", "empty": false}, {"rack": 3, "floor": 1, "code": "FWJW-132020Z", "roll": 5, "qty": 0, "note": "", "empty": false}, {"rack": 3, "floor": 1, "code": "FWJW-132020Z", "roll": 6, "qty": 0, "note": "", "empty": false}, {"rack": 4, "floor": 6, "code": "FWJW-141922ZA", "roll": 1, "qty": 0, "note": "", "empty": false}, {"rack": 4, "floor": 6, "code": "FWJW-141922ZA", "roll": 2, "qty": 0, "note": "", "empty": false}, {"rack": 4, "floor": 6, "code": "FWJW-141922ZA", "roll": 3, "qty": 0, "note": "", "empty": false}, {"rack": 4, "floor": 6, "code": "FWJW-141922ZA", "roll": 4, "qty": 0, "note": "", "empty": false}, {"rack": 4, "floor": 6, "code": "FWJW-141922ZA", "roll": 5, "qty": 0, "note": "", "empty": false}, {"rack": 4, "floor": 6, "code": "FWJW-141922ZA", "roll": 6, "qty": 0, "note": "", "empty": false}, {"rack": 4, "floor": 5, "code": "FWJW-141923ZA", "roll": 1, "qty": 0, "note": "", "empty": false}, {"rack": 4, "floor": 5, "code": "FWJW-141923ZA", "roll": 2, "qty": 0, "note": "", "empty": false}, {"rack": 4, "floor": 5, "code": "FWJW-141923ZA", "roll": 3, "qty": 0, "note": "", "empty": false}, {"rack": 4, "floor": 5, "code": "FWJW-141923ZA", "roll": 4, "qty": 0, "note": "", "empty": false}, {"rack": 4, "floor": 5, "code": "FWJW-141923ZA", "roll": 5, "qty": 0, "note": "", "empty": false}, {"rack": 4, "floor": 5, "code": "FWJW-141923ZA", "roll": 6, "qty": 0, "note": "", "empty": false}, {"rack": 4, "floor": 4, "code": "FWJW-142023ZA", "roll": 1, "qty": 0, "note": "", "empty": false}, {"rack": 4, "floor": 4, "code": "FWJW-142023ZA", "roll": 2, "qty": 0, "note": "", "empty": false}, {"rack": 4, "floor": 4, "code": "FWJW-142023ZA", "roll": 3, "qty": 0, "note": "", "empty": false}, {"rack": 4, "floor": 4, "code": "FWJW-142023ZA", "roll": 4, "qty": 0, "note": "", "empty": false}, {"rack": 4, "floor": 4, "code": "FWJW-142023ZA", "roll": 5, "qty": 0, "note": "", "empty": false}, {"rack": 4, "floor": 4, "code": "FWJW-142023ZA", "roll": 6, "qty": 0, "note": "", "empty": false}, {"rack": 4, "floor": 3, "code": "FWJW-152023ZM", "roll": 1, "qty": 0, "note": "", "empty": false}, {"rack": 4, "floor": 3, "code": "FWJW-152023ZM", "roll": 2, "qty": 0, "note": "", "empty": false}, {"rack": 4, "floor": 3, "code": "FWJW-152023ZM", "roll": 3, "qty": 0, "note": "", "empty": false}, {"rack": 4, "floor": 3, "code": "FWJW-152023ZM", "roll": 4, "qty": 0, "note": "", "empty": false}, {"rack": 4, "floor": 3, "code": "FWJW-152023ZM", "roll": 5, "qty": 0, "note": "", "empty": false}, {"rack": 4, "floor": 3, "code": "FWJW-152023ZM", "roll": 6, "qty": 0, "note": "", "empty": false}, {"rack": 4, "floor": 2, "code": "FWJW-152114Z", "roll": 1, "qty": 0, "note": "", "empty": false}, {"rack": 4, "floor": 2, "code": "FWJW-152114Z", "roll": 2, "qty": 0, "note": "", "empty": false}, {"rack": 4, "floor": 2, "code": "FWJW-152114Z", "roll": 3, "qty": 0, "note": "", "empty": false}, {"rack": 4, "floor": 2, "code": "FWJW-152114Z", "roll": 4, "qty": 0, "note": "", "empty": false}, {"rack": 4, "floor": 2, "code": "FWJW-152114Z", "roll": 5, "qty": 0, "note": "", "empty": false}, {"rack": 4, "floor": 2, "code": "FWJW-152114Z", "roll": 6, "qty": 0, "note": "", "empty": false}, {"rack": 4, "floor": 1, "code": "FWJW-152117ZA", "roll": 1, "qty": 0, "note": "", "empty": false}, {"rack": 4, "floor": 1, "code": "FWJW-152117ZA", "roll": 2, "qty": 0, "note": "", "empty": false}, {"rack": 4, "floor": 1, "code": "FWJW-152117ZA", "roll": 3, "qty": 0, "note": "", "empty": false}, {"rack": 4, "floor": 1, "code": "FWJW-152117ZA", "roll": 4, "qty": 0, "note": "", "empty": false}, {"rack": 4, "floor": 1, "code": "FWJW-152117ZA", "roll": 5, "qty": 0, "note": "", "empty": false}, {"rack": 4, "floor": 1, "code": "FWJW-152117ZA", "roll": 6, "qty": 0, "note": "", "empty": false}, {"rack": 5, "floor": 6, "code": "FWJW-152123Z", "roll": 1, "qty": 0, "note": "", "empty": false}, {"rack": 5, "floor": 6, "code": "FWJW-152123Z", "roll": 2, "qty": 0, "note": "", "empty": false}, {"rack": 5, "floor": 6, "code": "FWJW-152123Z", "roll": 3, "qty": 0, "note": "", "empty": false}, {"rack": 5, "floor": 6, "code": "FWJW-152123Z", "roll": 4, "qty": 0, "note": "", "empty": false}, {"rack": 5, "floor": 6, "code": "FWJW-152123Z", "roll": 5, "qty": 0, "note": "", "empty": false}, {"rack": 5, "floor": 6, "code": "FWJW-152123Z", "roll": 6, "qty": 0, "note": "", "empty": false}, {"rack": 5, "floor": 5, "code": "FWJW-162116Z", "roll": 1, "qty": 0, "note": "", "empty": false}, {"rack": 5, "floor": 5, "code": "FWJW-162116Z", "roll": 2, "qty": 0, "note": "", "empty": false}, {"rack": 5, "floor": 5, "code": "FWJW-162116Z", "roll": 3, "qty": 0, "note": "", "empty": false}, {"rack": 5, "floor": 5, "code": "FWJW-162116Z", "roll": 4, "qty": 0, "note": "", "empty": false}, {"rack": 5, "floor": 5, "code": "FWJW-162116Z", "roll": 5, "qty": 0, "note": "", "empty": false}, {"rack": 5, "floor": 5, "code": "FWJW-162116Z", "roll": 6, "qty": 0, "note": "", "empty": false}, {"rack": 5, "floor": 4, "code": "FWJW-162223ZA", "roll": 1, "qty": 0, "note": "", "empty": false}, {"rack": 5, "floor": 4, "code": "FWJW-162223ZA", "roll": 2, "qty": 0, "note": "", "empty": false}, {"rack": 5, "floor": 4, "code": "FWJW-162223ZA", "roll": 3, "qty": 0, "note": "", "empty": false}, {"rack": 5, "floor": 4, "code": "FWJW-162223ZA", "roll": 4, "qty": 0, "note": "", "empty": false}, {"rack": 5, "floor": 4, "code": "FWJW-162223ZA", "roll": 5, "qty": 0, "note": "", "empty": false}, {"rack": 5, "floor": 4, "code": "FWJW-162223ZA", "roll": 6, "qty": 0, "note": "", "empty": false}, {"rack": 5, "floor": 3, "code": "FWJW-162310ZA", "roll": 1, "qty": 0, "note": "", "empty": false}, {"rack": 5, "floor": 3, "code": "FWJW-162310ZA", "roll": 2, "qty": 0, "note": "", "empty": false}, {"rack": 5, "floor": 3, "code": "FWJW-162310ZA", "roll": 3, "qty": 0, "note": "", "empty": false}, {"rack": 5, "floor": 3, "code": "FWJW-162310ZA", "roll": 4, "qty": 0, "note": "", "empty": false}, {"rack": 5, "floor": 3, "code": "FWJW-162310ZA", "roll": 5, "qty": 0, "note": "", "empty": false}, {"rack": 5, "floor": 3, "code": "FWJW-162310ZA", "roll": 6, "qty": 0, "note": "", "empty": false}, {"rack": 5, "floor": 2, "code": "FWJW-162313Z", "roll": 1, "qty": 0, "note": "", "empty": false}, {"rack": 5, "floor": 2, "code": "FWJW-162313Z", "roll": 2, "qty": 0, "note": "", "empty": false}, {"rack": 5, "floor": 2, "code": "FWJW-162313Z", "roll": 3, "qty": 0, "note": "", "empty": false}, {"rack": 5, "floor": 2, "code": "FWJW-162313Z", "roll": 4, "qty": 0, "note": "", "empty": false}, {"rack": 5, "floor": 2, "code": "FWJW-162313Z", "roll": 5, "qty": 0, "note": "", "empty": false}, {"rack": 5, "floor": 2, "code": "FWJW-162313Z", "roll": 6, "qty": 0, "note": "", "empty": false}, {"rack": 5, "floor": 1, "code": "FWJW-182512Z", "roll": 1, "qty": 0, "note": "", "empty": false}, {"rack": 5, "floor": 1, "code": "FWJW-182512Z", "roll": 2, "qty": 0, "note": "", "empty": false}, {"rack": 5, "floor": 1, "code": "FWJW-182512Z", "roll": 3, "qty": 0, "note": "", "empty": false}, {"rack": 5, "floor": 1, "code": "FWJW-182512Z", "roll": 4, "qty": 0, "note": "", "empty": false}, {"rack": 5, "floor": 1, "code": "FWJW-182512Z", "roll": 5, "qty": 0, "note": "", "empty": false}, {"rack": 5, "floor": 1, "code": "FWJW-182512Z", "roll": 6, "qty": 0, "note": "", "empty": false}, {"rack": 6, "floor": 6, "code": "FWJW-182516ZA", "roll": 1, "qty": 0, "note": "", "empty": false}, {"rack": 6, "floor": 6, "code": "FWJW-182516ZA", "roll": 2, "qty": 0, "note": "", "empty": false}, {"rack": 6, "floor": 6, "code": "FWJW-182516ZA", "roll": 3, "qty": 0, "note": "", "empty": false}, {"rack": 6, "floor": 6, "code": "FWJW-182516ZA", "roll": 4, "qty": 0, "note": "", "empty": false}, {"rack": 6, "floor": 6, "code": "FWJW-182516ZA", "roll": 5, "qty": 0, "note": "", "empty": false}, {"rack": 6, "floor": 6, "code": "FWJW-182516ZA", "roll": 6, "qty": 0, "note": "", "empty": false}, {"rack": 6, "floor": 5, "code": "FWJW-182517Z", "roll": 1, "qty": 0, "note": "", "empty": false}, {"rack": 6, "floor": 5, "code": "FWJW-182517Z", "roll": 2, "qty": 0, "note": "", "empty": false}, {"rack": 6, "floor": 5, "code": "FWJW-182517Z", "roll": 3, "qty": 0, "note": "", "empty": false}, {"rack": 6, "floor": 5, "code": "FWJW-182517Z", "roll": 4, "qty": 0, "note": "", "empty": false}, {"rack": 6, "floor": 5, "code": "FWJW-182517Z", "roll": 5, "qty": 0, "note": "", "empty": false}, {"rack": 6, "floor": 5, "code": "FWJW-182517Z", "roll": 6, "qty": 0, "note": "", "empty": false}, {"rack": 6, "floor": 4, "code": "FWJW-202816Z", "roll": 1, "qty": 0, "note": "", "empty": false}, {"rack": 6, "floor": 4, "code": "FWJW-202816Z", "roll": 2, "qty": 0, "note": "", "empty": false}, {"rack": 6, "floor": 4, "code": "FWJW-202816Z", "roll": 3, "qty": 0, "note": "", "empty": false}, {"rack": 6, "floor": 4, "code": "FWJW-202816Z", "roll": 4, "qty": 0, "note": "", "empty": false}, {"rack": 6, "floor": 4, "code": "FWJW-202816Z", "roll": 5, "qty": 0, "note": "", "empty": false}, {"rack": 6, "floor": 4, "code": "FWJW-202816Z", "roll": 6, "qty": 0, "note": "", "empty": false}, {"rack": 6, "floor": 3, "code": "FWJW-223017ZD", "roll": 1, "qty": 0, "note": "", "empty": false}, {"rack": 6, "floor": 3, "code": "FWJW-223017ZD", "roll": 2, "qty": 0, "note": "", "empty": false}, {"rack": 6, "floor": 3, "code": "FWJW-223017ZD", "roll": 3, "qty": 0, "note": "", "empty": false}, {"rack": 6, "floor": 3, "code": "FWJW-223017ZD", "roll": 4, "qty": 0, "note": "", "empty": false}, {"rack": 6, "floor": 3, "code": "FWJW-223017ZD", "roll": 5, "qty": 0, "note": "", "empty": false}, {"rack": 6, "floor": 3, "code": "FWJW-223017ZD", "roll": 6, "qty": 0, "note": "", "empty": false}, {"rack": 6, "floor": 2, "code": "FWJW-233118ZA", "roll": 1, "qty": 0, "note": "", "empty": false}, {"rack": 6, "floor": 2, "code": "FWJW-233118ZA", "roll": 2, "qty": 0, "note": "", "empty": false}, {"rack": 6, "floor": 2, "code": "FWJW-233118ZA", "roll": 3, "qty": 0, "note": "", "empty": false}, {"rack": 6, "floor": 2, "code": "FWJW-233118ZA", "roll": 4, "qty": 0, "note": "", "empty": false}, {"rack": 6, "floor": 2, "code": "FWJW-233118ZA", "roll": 5, "qty": 0, "note": "", "empty": false}, {"rack": 6, "floor": 2, "code": "FWJW-233118ZA", "roll": 6, "qty": 0, "note": "", "empty": false}, {"rack": 6, "floor": 1, "code": "FWJW-253216ZA", "roll": 1, "qty": 0, "note": "", "empty": false}, {"rack": 6, "floor": 1, "code": "FWJW-253216ZA", "roll": 2, "qty": 0, "note": "", "empty": false}, {"rack": 6, "floor": 1, "code": "FWJW-253216ZA", "roll": 3, "qty": 0, "note": "", "empty": false}, {"rack": 6, "floor": 1, "code": "FWJW-253216ZA", "roll": 4, "qty": 0, "note": "", "empty": false}, {"rack": 6, "floor": 1, "code": "FWJW-253216ZA", "roll": 5, "qty": 0, "note": "", "empty": false}, {"rack": 6, "floor": 1, "code": "FWJW-253216ZA", "roll": 6, "qty": 0, "note": "", "empty": false}, {"rack": 7, "floor": 6, "code": "FWJW-253527ZA", "roll": 1, "qty": 0, "note": "", "empty": false}, {"rack": 7, "floor": 6, "code": "FWJW-253527ZA", "roll": 2, "qty": 0, "note": "", "empty": false}, {"rack": 7, "floor": 6, "code": "FWJW-253527ZA", "roll": 3, "qty": 0, "note": "", "empty": false}, {"rack": 7, "floor": 6, "code": "FWJW-253527ZA", "roll": 4, "qty": 0, "note": "", "empty": false}, {"rack": 7, "floor": 6, "code": "FWJW-253527ZA", "roll": 5, "qty": 0, "note": "", "empty": false}, {"rack": 7, "floor": 6, "code": "FWJW-253527ZA", "roll": 6, "qty": 0, "note": "", "empty": false}, {"rack": 7, "floor": 5, "code": "FWJW-263218ZA", "roll": 1, "qty": 0, "note": "", "empty": false}, {"rack": 7, "floor": 5, "code": "FWJW-263218ZA", "roll": 2, "qty": 0, "note": "", "empty": false}, {"rack": 7, "floor": 5, "code": "FWJW-263218ZA", "roll": 3, "qty": 0, "note": "", "empty": false}, {"rack": 7, "floor": 5, "code": "FWJW-263218ZA", "roll": 4, "qty": 0, "note": "", "empty": false}, {"rack": 7, "floor": 5, "code": "FWJW-263218ZA", "roll": 5, "qty": 0, "note": "", "empty": false}, {"rack": 7, "floor": 5, "code": "FWJW-263218ZA", "roll": 6, "qty": 0, "note": "", "empty": false}, {"rack": 7, "floor": 4, "code": "FWJW-283518ZA", "roll": 1, "qty": 0, "note": "", "empty": false}, {"rack": 7, "floor": 4, "code": "FWJW-283518ZA", "roll": 2, "qty": 0, "note": "", "empty": false}, {"rack": 7, "floor": 4, "code": "FWJW-283518ZA", "roll": 3, "qty": 0, "note": "", "empty": false}, {"rack": 7, "floor": 4, "code": "FWJW-283518ZA", "roll": 4, "qty": 0, "note": "", "empty": false}, {"rack": 7, "floor": 4, "code": "FWJW-283518ZA", "roll": 5, "qty": 0, "note": "", "empty": false}, {"rack": 7, "floor": 4, "code": "FWJW-283518ZA", "roll": 6, "qty": 0, "note": "", "empty": false}, {"rack": 7, "floor": 3, "code": "FWJW-283519ZA", "roll": 1, "qty": 0, "note": "", "empty": false}, {"rack": 7, "floor": 3, "code": "FWJW-283519ZA", "roll": 2, "qty": 0, "note": "", "empty": false}, {"rack": 7, "floor": 3, "code": "FWJW-283519ZA", "roll": 3, "qty": 0, "note": "", "empty": false}, {"rack": 7, "floor": 3, "code": "FWJW-283519ZA", "roll": 4, "qty": 0, "note": "", "empty": false}, {"rack": 7, "floor": 3, "code": "FWJW-283519ZA", "roll": 5, "qty": 0, "note": "", "empty": false}, {"rack": 7, "floor": 3, "code": "FWJW-283519ZA", "roll": 6, "qty": 0, "note": "", "empty": false}, {"rack": 7, "floor": 2, "code": "", "roll": 1, "qty": 0, "note": "", "empty": true}, {"rack": 7, "floor": 2, "code": "", "roll": 2, "qty": 0, "note": "", "empty": true}, {"rack": 7, "floor": 2, "code": "", "roll": 3, "qty": 0, "note": "", "empty": true}, {"rack": 7, "floor": 2, "code": "", "roll": 4, "qty": 0, "note": "", "empty": true}, {"rack": 7, "floor": 2, "code": "", "roll": 5, "qty": 0, "note": "", "empty": true}, {"rack": 7, "floor": 2, "code": "", "roll": 6, "qty": 0, "note": "", "empty": true}, {"rack": 7, "floor": 1, "code": "", "roll": 1, "qty": 0, "note": "", "empty": true}, {"rack": 7, "floor": 1, "code": "", "roll": 2, "qty": 0, "note": "", "empty": true}, {"rack": 7, "floor": 1, "code": "", "roll": 3, "qty": 0, "note": "", "empty": true}, {"rack": 7, "floor": 1, "code": "", "roll": 4, "qty": 0, "note": "", "empty": true}, {"rack": 7, "floor": 1, "code": "", "roll": 5, "qty": 0, "note": "", "empty": true}, {"rack": 7, "floor": 1, "code": "", "roll": 6, "qty": 0, "note": "", "empty": true}, {"rack": 8, "floor": 6, "code": "", "roll": 1, "qty": 0, "note": "", "empty": true}, {"rack": 8, "floor": 6, "code": "", "roll": 2, "qty": 0, "note": "", "empty": true}, {"rack": 8, "floor": 6, "code": "", "roll": 3, "qty": 0, "note": "", "empty": true}, {"rack": 8, "floor": 6, "code": "", "roll": 4, "qty": 0, "note": "", "empty": true}, {"rack": 8, "floor": 6, "code": "", "roll": 5, "qty": 0, "note": "", "empty": true}, {"rack": 8, "floor": 6, "code": "", "roll": 6, "qty": 0, "note": "", "empty": true}, {"rack": 8, "floor": 5, "code": "", "roll": 1, "qty": 0, "note": "", "empty": true}, {"rack": 8, "floor": 5, "code": "", "roll": 2, "qty": 0, "note": "", "empty": true}, {"rack": 8, "floor": 5, "code": "", "roll": 3, "qty": 0, "note": "", "empty": true}, {"rack": 8, "floor": 5, "code": "", "roll": 4, "qty": 0, "note": "", "empty": true}, {"rack": 8, "floor": 5, "code": "", "roll": 5, "qty": 0, "note": "", "empty": true}, {"rack": 8, "floor": 5, "code": "", "roll": 6, "qty": 0, "note": "", "empty": true}, {"rack": 8, "floor": 4, "code": "", "roll": 1, "qty": 0, "note": "", "empty": true}, {"rack": 8, "floor": 4, "code": "", "roll": 2, "qty": 0, "note": "", "empty": true}, {"rack": 8, "floor": 4, "code": "", "roll": 3, "qty": 0, "note": "", "empty": true}, {"rack": 8, "floor": 4, "code": "", "roll": 4, "qty": 0, "note": "", "empty": true}, {"rack": 8, "floor": 4, "code": "", "roll": 5, "qty": 0, "note": "", "empty": true}, {"rack": 8, "floor": 4, "code": "", "roll": 6, "qty": 0, "note": "", "empty": true}, {"rack": 8, "floor": 3, "code": "", "roll": 1, "qty": 0, "note": "", "empty": true}, {"rack": 8, "floor": 3, "code": "", "roll": 2, "qty": 0, "note": "", "empty": true}, {"rack": 8, "floor": 3, "code": "", "roll": 3, "qty": 0, "note": "", "empty": true}, {"rack": 8, "floor": 3, "code": "", "roll": 4, "qty": 0, "note": "", "empty": true}, {"rack": 8, "floor": 3, "code": "", "roll": 5, "qty": 0, "note": "", "empty": true}, {"rack": 8, "floor": 3, "code": "", "roll": 6, "qty": 0, "note": "", "empty": true}, {"rack": 8, "floor": 2, "code": "", "roll": 1, "qty": 0, "note": "", "empty": true}, {"rack": 8, "floor": 2, "code": "", "roll": 2, "qty": 0, "note": "", "empty": true}, {"rack": 8, "floor": 2, "code": "", "roll": 3, "qty": 0, "note": "", "empty": true}, {"rack": 8, "floor": 2, "code": "", "roll": 4, "qty": 0, "note": "", "empty": true}, {"rack": 8, "floor": 2, "code": "", "roll": 5, "qty": 0, "note": "", "empty": true}, {"rack": 8, "floor": 2, "code": "", "roll": 6, "qty": 0, "note": "", "empty": true}, {"rack": 8, "floor": 1, "code": "", "roll": 1, "qty": 0, "note": "", "empty": true}, {"rack": 8, "floor": 1, "code": "", "roll": 2, "qty": 0, "note": "", "empty": true}, {"rack": 8, "floor": 1, "code": "", "roll": 3, "qty": 0, "note": "", "empty": true}, {"rack": 8, "floor": 1, "code": "", "roll": 4, "qty": 0, "note": "", "empty": true}, {"rack": 8, "floor": 1, "code": "", "roll": 5, "qty": 0, "note": "", "empty": true}, {"rack": 8, "floor": 1, "code": "", "roll": 6, "qty": 0, "note": "", "empty": true}];
+let curRack=1,sel=new Set(),logs=[],hlRack=null,hlFloor=null,hlReady=false,activePrefix='';
+
+function sc(c){return c?c.replace(/^FWJW-/i,''):''}
+function pfx(c){return sc(c).replace(/\D/g,'').slice(0,2)}
+function cellClass(item){
+  if(!item||item.empty) return 'em';
+  if(item.qty<=1) return 'cr';
+  if(item.qty<=2) return 'lw';
+  return 'ok';
+}
+function pad(n){return n.toString().padStart(2,'0')}
+
+function saveData(){
+  try{localStorage.setItem(SK,JSON.stringify({data,logs}));}catch(e){}
+}
+function loadData(){
+  try{
+    const s=localStorage.getItem(SK);
+    if(s){const p=JSON.parse(s);data=p.data;logs=p.logs||[];showToast('저장된 데이터 로드');}
+  }catch(e){}
+}
+
+function calcStats(){
+  document.getElementById('sWrn').textContent=data.filter(d=>!d.empty&&d.qty<=1).length;
+}
+
+function buildTabs(){
+  const tc=document.getElementById('tabs');tc.innerHTML='';
+  const allBtn=document.createElement('button');
+  allBtn.className='tab'+(curRack===0?' active':'');
+  allBtn.textContent='전체보기';
+  allBtn.onclick=()=>{curRack=0;sel.clear();hlRack=null;hlFloor=null;renderView();buildTabs()};
+  tc.appendChild(allBtn);
+  for(let r=1;r<=RACKS;r++){
+    const w=data.filter(d=>d.rack===r&&!d.empty&&d.qty<=1).length;
+    const b=document.createElement('button');
+    b.className='tab'+(r===curRack?' active':'');
+    b.innerHTML=r+'번'+(w?'<span class="wb">'+w+'</span>':'');
+    b.onclick=(rr=>()=>{curRack=rr;sel.clear();hlRack=null;hlFloor=null;renderView();buildTabs();})(r);
+    tc.appendChild(b);
+  }
+}
+
+function renderView(){
+  const body=document.getElementById('rackBody');
+  const abar=document.querySelector('.abar');
+  if(curRack===0){
+    renderAll(body);
+    abar.style.display='none';
+    document.getElementById('rTitle').textContent='전체보기';
+    document.getElementById('rMeta').textContent='';
+  } else {
+    renderRack(body,curRack);
+    abar.style.display='';
+    const wrn=data.filter(d=>d.rack===curRack&&!d.empty&&d.qty<=1).length;
+    document.getElementById('rTitle').textContent='보관대 '+curRack;
+    document.getElementById('rMeta').textContent='긴급 '+wrn+'개';
+    updateSelUI();
+  }
+  renderLog();
+}
+
+function renderRack(body,rack){
+  body.innerHTML='';
+  // 컬럼 헤더
+  const hrow=document.createElement('div');
+  hrow.style.cssText='display:flex;align-items:center;gap:8px;margin-bottom:4px';
+  const hpad=document.createElement('div');hpad.style.cssText='width:180px;flex-shrink:0';
+  hrow.appendChild(hpad);
+  const hwrap=document.createElement('div');hwrap.style.cssText='display:flex;gap:5px;flex:1';
+  for(let c=1;c<=ROLLS;c++){
+    const h=document.createElement('div');
+    h.style.cssText='flex:1;max-width:48px;text-align:center;font-size:10px;color:#bbb';
+    h.textContent=c+'롤';
+    hwrap.appendChild(h);
+  }
+  hrow.appendChild(hwrap);
+  body.appendChild(hrow);
+
+  // 층별 행
+  for(let f=FLOORS;f>=1;f--){
+    const flItems=data.filter(d=>d.rack===rack&&d.floor===f);
+    const code=flItems.find(d=>!d.empty)?.code||'';
+    const flNote=flItems.find(d=>d.note&&d.note.trim());
+
+    const row=document.createElement('div');
+    row.className='floor-row';
+
+    // 형번 영역
+    const info=document.createElement('div');info.className='floor-info';
+    const numEl=document.createElement('div');numEl.className='floor-num';numEl.textContent=f+'층';
+    const codeEl=document.createElement('div');
+    codeEl.className='floor-code'+(code?'':' empty')+(hlRack===rack&&hlFloor===f?' hl':'');
+    codeEl.textContent=code?sc(code):'미배치';
+    if(flNote) codeEl.innerHTML=sc(code)+'<span class="floor-note-dot"></span>';
+    if(code) codeEl.onclick=()=>openPopup(code,f,rack);
+    info.appendChild(numEl);info.appendChild(codeEl);
+    row.appendChild(info);
+
+    // 롤 셀 영역
+    const rwrap=document.createElement('div');rwrap.className='roll-wrap';
+    for(let c=1;c<=ROLLS;c++){
+      const item=data.find(d=>d.rack===rack&&d.floor===f&&d.roll===c);
+      const col=document.createElement('div');col.className='roll-col';
+
+      const lbl=document.createElement('div');lbl.className='roll-label';lbl.textContent=c;
+      col.appendChild(lbl);
+
+      const cell=document.createElement('div');
+      cell.className='roll-cell '+cellClass(item);
+      const k=rack+','+f+','+c;
+      if(sel.has(k)) cell.classList.add('sel');
+      cell.textContent=(!item||item.empty)?'—':item.qty;
+      if(item&&!item.empty){
+        cell.onclick=(()=>{const kk=k;return()=>toggleSel(kk);})();
+      }
+      col.appendChild(cell);
+      rwrap.appendChild(col);
+    }
+    row.appendChild(rwrap);
+    body.appendChild(row);
+  }
+}
+
+function toggleSel(k){
+  if(hlReady){hlRack=null;hlFloor=null;hlReady=false;}
+  sel.has(k)?sel.delete(k):sel.add(k);
+  renderView();
+}
+function clearSel(){sel.clear();renderView();}
+
+function updateSelUI(){
+  const n=sel.size;
+  const si=document.getElementById('selInfo');
+  const bp=document.getElementById('bPlus');
+  const bm=document.getElementById('bMinus');
+  const bc=document.getElementById('bClr');
+  if(n===0){
+    si.innerHTML='셀을 탭해서 선택하세요';
+    bp.disabled=bm.disabled=bc.disabled=true;
+  } else {
+    const codes=[...new Set([...sel].map(k=>{const[r,f,c]=k.split(',').map(Number);return data.find(d=>d.rack===r&&d.floor===f&&d.roll===c)?.code||'';}).filter(Boolean))];
+    si.innerHTML='<strong>'+n+'개 선택</strong> · '+codes.slice(0,2).map(sc).join(', ')+(codes.length>2?' 외':'');
+    bp.disabled=bm.disabled=bc.disabled=false;
+  }
+}
+
+function bulkChange(dir){
+  if(!sel.size) return;
+  const now=new Date();
+  const t=pad(now.getHours())+':'+pad(now.getMinutes());
+  const changed=[];
+  sel.forEach(k=>{
+    const[r,f,c]=k.split(',').map(Number);
+    const item=data.find(d=>d.rack===r&&d.floor===f&&d.roll===c);
+    if(!item||item.empty) return;
+    const prev=item.qty;
+    item.qty=Math.max(0,Math.min(MAX,item.qty+dir));
+    if(item.qty!==prev) changed.push({code:item.code,roll:c,prev,next:item.qty});
+  });
+  if(changed.length){
+    const label=dir>0?'입고':'출고';
+    const msg=changed.length===1
+      ?'<strong>'+sc(changed[0].code)+'</strong> '+changed[0].roll+'롤 '+changed[0].prev+'→'+changed[0].next
+      :'<strong>'+changed.length+'개</strong> '+label;
+    if(logs[0]?.t==='—') logs=[];
+    logs.unshift({t,m:msg,type:'stock',codes:changed.map(c=>c.code),rack:curRack});
+    if(logs.length>50) logs.pop();
+    showToast(dir>0?'＋1 입고':'－1 출고');
+    saveData();
+  }
+  calcStats();buildTabs();renderView();
+}
+
+function renderLog(){
+  const ll=document.getElementById('logList');
+  if(!logs.length){ll.innerHTML='<div class="log-row"><span class="log-t">—</span><span class="log-m">이력 없음</span></div>';return;}
+  ll.innerHTML=logs.map(l=>'<div class="log-row"><span class="log-t">'+l.t+'</span><span class="log-m">'+l.m+'</span></div>').join('');
+}
+
+function renderAll(body){
+  body.innerHTML='';
+  // 앞자리 필터
+  const prefixes=[...new Set(data.filter(d=>!d.empty).map(d=>pfx(d.code)))].sort();
+  const fw=document.createElement('div');fw.className='all-filter';
+  const ab=document.createElement('button');
+  ab.className='pfx-btn'+(activePrefix===''?' active':'');
+  ab.textContent='전체';ab.onclick=()=>{activePrefix='';renderView();};
+  fw.appendChild(ab);
+  prefixes.forEach(p=>{
+    const b=document.createElement('button');
+    b.className='pfx-btn'+(activePrefix===p?' active':'');
+    b.textContent=p;b.onclick=()=>{activePrefix=p;renderView();};
+    fw.appendChild(b);
+  });
+  body.appendChild(fw);
+
+  const wrap=document.createElement('div');wrap.className='all-table';
+  const tbl=document.createElement('table');
+
+  // 헤더
+  const thead=document.createElement('thead');
+  const hr=document.createElement('tr');
+  const th0=document.createElement('th');th0.className='all-th-lbl';th0.textContent='층';hr.appendChild(th0);
+  for(let r=1;r<=RACKS;r++){
+    const th=document.createElement('th');
+    const w=data.filter(d=>d.rack===r&&!d.empty&&d.qty<=1).length;
+    th.style.cssText='font-size:11px;font-weight:600;color:#555;padding:4px 2px;text-align:center';
+    th.innerHTML='보관대'+r+(w?'<br><span style="font-size:9px;color:#c62828">긴급'+w+'</span>':'');
+    hr.appendChild(th);
+  }
+  thead.appendChild(hr);tbl.appendChild(thead);
+
+  // 바디
+  const tbody=document.createElement('tbody');
+  for(let f=FLOORS;f>=1;f--){
+    const tr=document.createElement('tr');
+    const td0=document.createElement('td');
+    td0.style.cssText='font-size:10px;color:#aaa;text-align:center;padding:2px;width:22px';
+    td0.textContent=f+'층';tr.appendChild(td0);
+    for(let r=1;r<=RACKS;r++){
+      const flItems=data.filter(d=>d.rack===r&&d.floor===f);
+      const codeItem=flItems.find(d=>!d.empty);
+      const code=codeItem?.code||'';
+      const flWrn=flItems.filter(d=>!d.empty&&d.qty<=1).length;
+      const flNote=flItems.find(d=>d.note&&d.note.trim());
+      const minQty=codeItem?Math.min(...flItems.filter(d=>!d.empty).map(d=>d.qty)):null;
+      const isActive=!activePrefix||(code&&pfx(code)===activePrefix);
+
+      let cls='all-cell ';
+      if(!code) cls+='em';
+      else if(!isActive) cls+='dim';
+      else if(flWrn>0) cls+='cr';
+      else if(minQty!==null&&minQty<=2) cls+='lw';
+      else cls+='ok';
+
+      const td=document.createElement('td');td.style.cssText='padding:2px';
+      const cell=document.createElement('div');cell.className=cls;
+      if(flNote&&isActive) cell.innerHTML='<span class="all-note-dot"></span>'+(code?sc(code):'—');
+      else cell.textContent=code?sc(code):'—';
+      if(code&&isActive) cell.onclick=(()=>{const cc=code,ff=f,rr=r;return()=>openPopup(cc,ff,rr);})();
+      td.appendChild(cell);tr.appendChild(td);
+    }
+    tbody.appendChild(tr);
+  }
+  tbl.appendChild(tbody);wrap.appendChild(tbl);body.appendChild(wrap);
+}
+
+function openPopup(code,floor,rack){
+  window._popupCode=code; window._popupFloor=floor; window._popupRack=rack;
+  document.getElementById('popCode').textContent=sc(code);
+  document.getElementById('popLoc').textContent='보관대 '+rack+' · '+floor+'층';
+  document.getElementById('histPanel').style.display='none';
+  var btn=document.getElementById('histBtn');
+  if(btn){btn.style.background='#fff';btn.style.color='#555';btn.style.borderColor='#e0e0e0';}
+  renderPopupBody(code,floor,rack,null);
+  document.getElementById('popupBg').classList.add('open');
+}
+
+function renderPopupBody(code,floor,rack,editingRoll){
+  var pb=document.getElementById('popBody');
+  pb.innerHTML='';
+  var TAGS=['정상','크랙','변형','오염','上','下','입고예정','개선중','개선완료','↵ 줄바꿈','⌫ 백스페이스','🗑 전체지우기'];
+  var items=data.filter(function(d){return d.rack===rack&&d.floor===floor&&!d.empty;}).sort(function(a,b){return a.roll-b.roll;});
+  items.forEach(function(d){
+    var hasNote=d.note&&d.note.trim();
+    var qc=d.qty<=1?'#c62828':d.qty<=2?'#e65100':'#2e7d32';
+    var qbg=d.qty<=1?'#ffebee':d.qty<=2?'#fff8e1':'#e8f5e9';
+    var isEditing=editingRoll===d.roll;
+
+    var wrap=document.createElement('div');
+    wrap.style.cssText='border-radius:12px;overflow:hidden;margin-bottom:8px;border:1px solid '+(hasNote?'#ffcc80':'#efefed');
+
+    var top=document.createElement('div');
+    top.style.cssText='display:flex;align-items:center;gap:10px;padding:10px 12px;background:'+(hasNote?'#fff8f0':'#f9f9f7');
+
+    var qtyDiv=document.createElement('div');
+    qtyDiv.style.cssText='flex-shrink:0;text-align:center;min-width:36px';
+    qtyDiv.innerHTML='<div style="font-size:10px;color:#aaa;margin-bottom:2px">'+d.roll+'롤</div>'
+      +'<div style="font-size:20px;font-weight:700;background:'+qbg+';color:'+qc+';border-radius:8px;padding:3px 8px">'+d.qty+'</div>';
+
+    var noteDiv=document.createElement('div');
+    noteDiv.style.cssText='flex:1;min-width:0';
+    noteDiv.innerHTML=hasNote
+      ?'<div style="font-size:13px;color:#1a1a1a;line-height:1.5;word-break:keep-all">'+d.note+'</div>'
+      :'<div style="font-size:13px;color:#ccc;font-style:italic">특이사항 없음</div>';
+
+    var editBtn=document.createElement('button');
+    editBtn.textContent=isEditing?'닫기':'편집';
+    editBtn.style.cssText='flex-shrink:0;font-size:12px;padding:5px 10px;border-radius:8px;border:1px solid #e0e0e0;background:'+(isEditing?'#1a1a1a':'#fff')+';color:'+(isEditing?'#fff':'#555')+';cursor:pointer;font-family:Pretendard,sans-serif';
+    editBtn.onclick=(function(cc,ff,rr,roll,editing){
+      return function(){renderPopupBody(cc,ff,rr,editing?null:roll);};
+    })(code,floor,rack,d.roll,isEditing);
+
+    top.appendChild(qtyDiv);
+    top.appendChild(noteDiv);
+    top.appendChild(editBtn);
+    wrap.appendChild(top);
+
+    if(isEditing){
+      var edit=document.createElement('div');
+      edit.style.cssText='padding:12px;background:#fff;border-top:1px solid #f0f0f0';
+
+      var tagWrap=document.createElement('div');
+      tagWrap.style.cssText='display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px';
+
+      TAGS.forEach(function(tag){
+        var btn=document.createElement('button');
+        btn.textContent=tag;
+        var isBack=(tag==='⌫ 백스페이스');
+        var isDel=(tag==='🗑 전체지우기');
+        var isNl=(tag==='↵ 줄바꿈');
+        var isSpecial=isBack||isDel||isNl;
+        btn.style.cssText='font-size:13px;padding:7px 13px;border-radius:20px;border:1px solid '+(isSpecial?'#bbb':'#e0e0e0')+';background:'+(isDel?'#ffebee':isSpecial?'#f5f5f3':'#fff')+';cursor:pointer;font-family:Pretendard,sans-serif;color:'+(isDel?'#c62828':'#1a1a1a');
+        btn.addEventListener('mousedown',function(e){e.preventDefault();});
+        btn.addEventListener('touchstart',function(e){e.preventDefault();},{ passive:false });
+        btn.onclick=(function(t,roll2){
+          return function(){
+            var inp=document.getElementById('noteInput_'+roll2);
+            if(!inp) return;
+            if(t==='↵ 줄바꿈'){
+              var s=inp.selectionStart||inp.value.length;
+              inp.value=inp.value.slice(0,s)+String.fromCharCode(10)+inp.value.slice(inp.selectionEnd||s);
+              inp.focus();
+            } else if(t==='⌫ 백스페이스'){
+              var s2=inp.selectionStart, e2=inp.selectionEnd;
+              if(s2===e2&&s2>0){inp.value=inp.value.slice(0,s2-1)+inp.value.slice(s2);}
+              else{inp.value=inp.value.slice(0,s2)+inp.value.slice(e2);}
+              inp.focus();
+            } else if(t==='🗑 전체지우기'){
+              if(confirm('특이사항을 모두 지울까요?')) inp.value='';
+              inp.focus();
+            } else {
+              var isComplete=(t==='개선완료');
+              var today=new Date();
+              var ds=today.getFullYear()+'.'+(today.getMonth()+1).toString().padStart(2,'0')+'.'+today.getDate().toString().padStart(2,'0');
+              var val=isComplete?t+' ('+ds+')':t;
+              inp.value=(inp.value?inp.value+' / ':'')+val;
+              inp.focus();
+            }
+          };
+        })(tag,d.roll);
+        tagWrap.appendChild(btn);
+      });
+      edit.appendChild(tagWrap);
+
+      var inputWrap=document.createElement('div');
+      inputWrap.style.cssText='display:flex;gap:8px;align-items:flex-start';
+
+      var textarea=document.createElement('textarea');
+      textarea.id='noteInput_'+d.roll;
+      textarea.value=d.note||'';
+      textarea.placeholder='직접 입력 또는 위 태그 탭';
+      textarea.setAttribute('inputmode','text');
+      textarea.setAttribute('enterkeyhint','done');
+      textarea.setAttribute('tabindex','0');
+      textarea.setAttribute('autocomplete','off');
+      textarea.setAttribute('autocorrect','off');
+      textarea.setAttribute('autocapitalize','sentences');
+      textarea.style.cssText='flex:1;font-size:14px;padding:9px 11px;border:1.5px solid #e0e0e0;border-radius:10px;font-family:Pretendard,sans-serif;resize:none;height:80px;outline:none;color:#1a1a1a;line-height:1.5';
+      textarea.addEventListener('focus',function(){
+        window._activeNoteInput=this.id;
+      });
+
+      var saveBtn=document.createElement('button');
+      saveBtn.textContent='저장';
+      saveBtn.style.cssText='padding:10px 16px;background:#1a1a1a;color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;font-family:Pretendard,sans-serif;flex-shrink:0';
+      saveBtn.addEventListener('mousedown',function(e){e.preventDefault();});
+      saveBtn.onclick=(function(rr,ff,cc2,roll2){
+        return function(){
+          var val=document.getElementById('noteInput_'+roll2).value.trim();
+          var item=data.find(function(x){return x.rack===rr&&x.floor===ff&&x.roll===roll2;});
+          if(item){
+            var prevNote=item.note||'';
+            item.note=val;
+            saveData();
+            var now2=new Date();
+            var t2=now2.getHours().toString().padStart(2,'0')+':'+now2.getMinutes().toString().padStart(2,'0');
+            if(logs[0]&&logs[0].t==='—') logs=[];
+            logs.unshift({t:t2,m:'<strong>'+sc(cc2)+'</strong> '+roll2+'롤 특이사항 변경',type:'note',code:cc2,roll:roll2,rack:rr,floor:ff,prev:prevNote,next:val});
+            if(logs.length>50) logs.pop();
+          }
+          showToast('저장 완료');
+          renderPopupBody(cc2,ff,rr,null);
+        };
+      })(rack,floor,code,d.roll);
+
+      inputWrap.appendChild(textarea);
+      inputWrap.appendChild(saveBtn);
+      edit.appendChild(inputWrap);
+      wrap.appendChild(edit);
+    }
+    pb.appendChild(wrap);
+  });
+}
+
+function closePopup(){
+  document.getElementById('popupBg').classList.remove('open');
+  document.getElementById('histPanel').style.display='none';
+  window._popupCode=null; window._popupFloor=null; window._popupRack=null;
+}
+
+function toggleHistView(){
+  var panel=document.getElementById('histPanel');
+  var btn=document.getElementById('histBtn');
+  if(panel.style.display==='none'){
+    panel.style.display='block';
+    btn.style.background='#1a1a1a';btn.style.color='#fff';btn.style.borderColor='#1a1a1a';
+    renderHistPanel();
+  } else {
+    panel.style.display='none';
+    btn.style.background='#fff';btn.style.color='#555';btn.style.borderColor='#e0e0e0';
+  }
+}
+
+function renderHistPanel(){
+  var code=window._popupCode;
+  var hl=document.getElementById('histList');
+  hl.innerHTML='';
+  var related=logs.filter(function(l){
+    if(l.type==='stock') return l.codes&&l.codes.indexOf(code)>=0;
+    if(l.type==='note') return l.code===code;
+    return false;
+  });
+  if(!related.length){
+    hl.innerHTML='<div style="font-size:13px;color:#ccc;padding:8px 0">이력 없음</div>';
+    return;
+  }
+  related.forEach(function(l){
+    var div=document.createElement('div');
+    div.style.cssText='display:flex;gap:10px;padding:8px 0;border-bottom:1px solid #f5f5f3;font-size:13px';
+    var icon=l.type==='note'?'📝':'📦';
+    var detail='';
+    if(l.type==='note'){
+      detail='<div style="font-size:11px;color:#aaa;margin-top:2px">'
+        +(l.prev?'이전: '+l.prev.slice(0,20)+(l.prev.length>20?'…':'')+'<br>':'')
+        +(l.next?'변경: '+l.next.slice(0,20)+(l.next.length>20?'…':''):'(삭제)')
+        +'</div>';
+    }
+    div.innerHTML='<span style="color:#bbb;flex-shrink:0;width:38px">'+l.t+'</span>'
+      +'<div style="flex:1"><span style="font-size:14px">'+icon+'</span> '
+      +'<span style="color:#1a1a1a">'+l.m.replace(/<[^>]+>/g,'')+'</span>'
+      +detail+'</div>';
+    hl.appendChild(div);
+  });
+}
+
+function onSearch(val){
+  const dd=document.getElementById('dd');
+  const digits=val.trim().replace(/\D/g,'');
+  if(!digits){dd.classList.remove('open');return;}
+  const seen=new Map();
+  data.filter(d=>!d.empty&&sc(d.code).replace(/\D/g,'').includes(digits)).forEach(d=>{
+    const k=d.rack+','+d.floor;
+    if(!seen.has(k)) seen.set(k,{code:d.code,rack:d.rack,floor:d.floor,total:0,rolls:[],note:d.note||''});
+    seen.get(k).total+=d.qty;
+    seen.get(k).rolls.push(d.qty);
+    if(d.note&&!seen.get(k).note) seen.get(k).note=d.note;
+  });
+  let matches=[...seen.values()].sort((a,b)=>{
+    const an=sc(a.code).replace(/\D/g,''),bn=sc(b.code).replace(/\D/g,'');
+    return (an.startsWith(digits)?0:1)-(bn.startsWith(digits)?0:1)||an.localeCompare(bn);
+  });
+  dd.innerHTML='';
+  if(!matches.length){dd.innerHTML='<div style="padding:10px 14px;font-size:13px;color:#aaa">없음</div>';dd.classList.add('open');return;}
+  const hint=document.createElement('div');hint.className='dd-hint';hint.textContent='"'+digits+'" 포함 '+matches.length+'개';dd.appendChild(hint);
+  matches.forEach(m=>{
+    const item=document.createElement('div');item.className='dd-item';
+    const sCode=sc(m.code);
+    const numPart=sCode.replace(/\D/g,'');
+    const idx=numPart.indexOf(digits);
+    let hl=sCode;
+    if(idx>=0){let ni=0,s='',inH=false;for(let i=0;i<sCode.length;i++){if(/\d/.test(sCode[i])){if(ni===idx&&!inH){s+='<span class="dd-hl">';inH=true;}s+=sCode[i];ni++;if(ni===idx+digits.length&&inH){s+='</span>';inH=false;}}else s+=sCode[i];}if(inH)s+='</span>';hl=s;}
+    const wc=m.rolls.filter(q=>q<=1).length;
+    item.innerHTML='<div><span class="dd-code">'+hl+'</span><span class="dd-loc">보관대'+m.rack+' · '+m.floor+'층</span>'+(wc?'<span class="dd-warn">긴급'+wc+'</span>':'')+(m.note?'<div class="dd-note">'+m.note.slice(0,24)+(m.note.length>24?'…':'')+'</div>':'')+'</div>';
+    item.onmousedown=()=>jumpTo(m.rack,m.floor);
+    dd.appendChild(item);
+  });
+  // dd 위치 동적 계산
+  const inp2=document.getElementById('srch');
+  const rect2=inp2.getBoundingClientRect();
+  dd.style.top=(rect2.bottom+8)+'px';
+  dd.style.left='16px';
+  dd.style.right='212px';
+  dd.classList.add('open');
+}
+
+function jumpTo(rack,floor){
+  curRack=rack;sel.clear();hlRack=rack;hlFloor=floor;hlReady=false;
+  document.getElementById('srch').value='';
+  document.getElementById('dd').classList.remove('open');
+  buildTabs();renderView();
+  if(window._hlT) clearTimeout(window._hlT);
+  window._hlT=setTimeout(()=>{hlReady=true;},3000);
+}
+function hideDD(){setTimeout(()=>document.getElementById('dd').classList.remove('open'),180);}
+function showKp(){
+  const kp=document.getElementById('kp');
+  const inp=document.getElementById('srch');
+  const rect=inp.getBoundingClientRect();
+  kp.style.top=(rect.bottom+8)+'px';
+  kp.style.right='16px';
+  kp.style.left='auto';
+  kp.style.display='block';
+  const v=inp.value;if(v)onSearch(v);
+}
+function hideKp(){setTimeout(()=>{document.getElementById('kp').style.display='none';hideDD();},300);}
+function ev(e){e.preventDefault();}
+function kp_press(n){const i=document.getElementById('srch');i.value+=n;onSearch(i.value);}
+function kp_back(){const i=document.getElementById('srch');i.value=i.value.slice(0,-1);onSearch(i.value);}
+function kp_clear(){const i=document.getElementById('srch');i.value='';onSearch('');document.getElementById('dd').classList.remove('open');}
+
+function exportCSV(){
+  const now=new Date();
+  const stamp=now.getFullYear()+pad(now.getMonth()+1)+pad(now.getDate())+'_'+pad(now.getHours())+pad(now.getMinutes());
+  const lines=['키,보관대,층,형번,롤번호,수량,특이사항'];
+  [...data].sort((a,b)=>a.rack-b.rack||b.floor-a.floor||a.roll-b.roll).forEach(d=>{
+    var note=(d.note||'').replace(/\n/g,' | ').replace(/,/g,'，');
+    lines.push([d.rack+'_'+d.floor,d.rack,d.floor,d.code||'0',d.roll,d.qty,note].join(','));
+  });
+  const blob=new Blob(['\uFEFF'+lines.join('\n')],{type:'text/csv;charset=utf-8'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='storage_'+stamp+'.csv';a.click();
+  showToast('CSV 저장 완료');
+}
+
+function importCSV(e){
+  const file=e.target.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=ev=>{
+    try{
+      let text=ev.target.result;
+      if(text.charCodeAt(0)===0xFEFF) text=text.slice(1);
+      const lines=text.split('\n').filter(l=>l.trim());
+      const nd=[];
+      for(let i=1;i<lines.length;i++){
+        const p=lines[i].split(',');if(p.length<6)continue;
+        const rack=parseInt(p[1]),floor=parseInt(p[2]),code=p[3].trim(),roll=parseInt(p[4]),qty=parseInt(p[5])||0;
+        const note=(p[6]?p[6].trim():'').replace(/ \| /g,'\n').replace(/，/g,',');
+        const empty=(code==='0'||code===''||code.includes('?'));
+        nd.push({rack,floor,code:empty?'':code,roll,qty,note,empty});
+      }
+      if(!nd.length){showToast('파싱 실패');return;}
+      if(!confirm('현재 데이터를 CSV로 덮어쓸까요?')) return;
+      data=nd;logs=[];sel.clear();curRack=1;
+      saveData();calcStats();buildTabs();renderView();
+      showToast('불러오기 완료 ('+nd.length+'행)');
+    }catch(err){showToast('오류: '+err.message);}
+  };
+  reader.readAsText(file,'UTF-8');e.target.value='';
+}
+
+function openAddModal(){
+  const rs=document.getElementById('mRack');rs.innerHTML='';
+  for(let r=1;r<=RACKS;r++) rs.innerHTML+='<option value="'+r+'">보관대 '+r+'</option>';
+  rs.value=curRack;
+  const fs=document.getElementById('mFloor');fs.innerHTML='';
+  for(let f=FLOORS;f>=1;f--) fs.innerHTML+='<option value="'+f+'">'+f+'층</option>';
+  const ro=document.getElementById('mRoll');ro.innerHTML='';
+  for(let c=1;c<=ROLLS;c++) ro.innerHTML+='<option value="'+c+'">'+c+'번 롤</option>';
+  document.getElementById('mCode').value='';document.getElementById('mQty').value=0;document.getElementById('mErr').textContent='';
+  document.getElementById('modalBg').classList.add('open');
+}
+function closeModal(){document.getElementById('modalBg').classList.remove('open');}
+function addPart(){
+  const code=document.getElementById('mCode').value.trim();
+  const ri=parseInt(document.getElementById('mRack').value);
+  const fi=parseInt(document.getElementById('mFloor').value);
+  const ci=parseInt(document.getElementById('mRoll').value);
+  const qty=Math.max(0,Math.min(MAX,parseInt(document.getElementById('mQty').value)||0));
+  const err=document.getElementById('mErr');
+  if(!code){err.textContent='형번 입력 필요';return;}
+  const flItems=data.filter(d=>d.rack===ri&&d.floor===fi);
+  const existCode=flItems.find(d=>!d.empty);
+  if(existCode&&existCode.code!==code){err.textContent='이 층은 이미 '+existCode.code;return;}
+  const item=data.find(d=>d.rack===ri&&d.floor===fi&&d.roll===ci);
+  if(item){item.code=code;item.qty=qty;item.empty=false;}
+  const now=new Date();
+  logs.unshift({t:pad(now.getHours())+':'+pad(now.getMinutes()),m:'<strong>'+sc(code)+'</strong> 보관대'+ri+' '+fi+'층 '+ci+'롤 추가'});
+  curRack=ri;closeModal();saveData();calcStats();buildTabs();renderView();showToast(sc(code)+' 추가 완료');
+}
+
+function confirmReset(){
+  if(confirm('초기 데이터로 되돌릴까요?')){
+    data=JSON.parse(JSON.stringify([{"rack": 1, "floor": 6, "code": "FWJW-101515Z", "roll": 1, "qty": 0, "note": "", "empty": false}, {"rack": 1, "floor": 6, "code": "FWJW-101515Z", "roll": 2, "qty": 0, "note": "", "empty": false}, {"rack": 1, "floor": 6, "code": "FWJW-101515Z", "roll": 3, "qty": 0, "note": "", "empty": false}, {"rack": 1, "floor": 6, "code": "FWJW-101515Z", "roll": 4, "qty": 0, "note": "", "empty": false}, {"rack": 1, "floor": 6, "code": "FWJW-101515Z", "roll": 5, "qty": 0, "note": "", "empty": false}, {"rack": 1, "floor": 6, "code": "FWJW-101515Z", "roll": 6, "qty": 0, "note": "", "empty": false}, {"rack": 1, "floor": 5, "code": "FWJW-101516ZA", "roll": 1, "qty": 0, "note": "", "empty": false}, {"rack": 1, "floor": 5, "code": "FWJW-101516ZA", "roll": 2, "qty": 0, "note": "", "empty": false}, {"rack": 1, "floor": 5, "code": "FWJW-101516ZA", "roll": 3, "qty": 0, "note": "", "empty": false}, {"rack": 1, "floor": 5, "code": "FWJW-101516ZA", "roll": 4, "qty": 0, "note": "", "empty": false}, {"rack": 1, "floor": 5, "code": "FWJW-101516ZA", "roll": 5, "qty": 0, "note": "", "empty": false}, {"rack": 1, "floor": 5, "code": "FWJW-101516ZA", "roll": 6, "qty": 0, "note": "", "empty": false}, {"rack": 1, "floor": 4, "code": "FWJW-101517ZA", "roll": 1, "qty": 0, "note": "", "empty": false}, {"rack": 1, "floor": 4, "code": "FWJW-101517ZA", "roll": 2, "qty": 0, "note": "", "empty": false}, {"rack": 1, "floor": 4, "code": "FWJW-101517ZA", "roll": 3, "qty": 0, "note": "", "empty": false}, {"rack": 1, "floor": 4, "code": "FWJW-101517ZA", "roll": 4, "qty": 0, "note": "", "empty": false}, {"rack": 1, "floor": 4, "code": "FWJW-101517ZA", "roll": 5, "qty": 0, "note": "", "empty": false}, {"rack": 1, "floor": 4, "code": "FWJW-101517ZA", "roll": 6, "qty": 0, "note": "", "empty": false}, {"rack": 1, "floor": 3, "code": "", "roll": 1, "qty": 0, "note": "", "empty": true}, {"rack": 1, "floor": 3, "code": "", "roll": 2, "qty": 0, "note": "", "empty": true}, {"rack": 1, "floor": 3, "code": "", "roll": 3, "qty": 0, "note": "", "empty": true}, {"rack": 1, "floor": 3, "code": "", "roll": 4, "qty": 0, "note": "", "empty": true}, {"rack": 1, "floor": 3, "code": "", "roll": 5, "qty": 0, "note": "", "empty": true}, {"rack": 1, "floor": 3, "code": "", "roll": 6, "qty": 0, "note": "", "empty": true}, {"rack": 1, "floor": 2, "code": "FWJW-101525ZA", "roll": 1, "qty": 0, "note": "", "empty": false}, {"rack": 1, "floor": 2, "code": "FWJW-101525ZA", "roll": 2, "qty": 0, "note": "", "empty": false}, {"rack": 1, "floor": 2, "code": "FWJW-101525ZA", "roll": 3, "qty": 0, "note": "", "empty": false}, {"rack": 1, "floor": 2, "code": "FWJW-101525ZA", "roll": 4, "qty": 0, "note": "", "empty": false}, {"rack": 1, "floor": 2, "code": "FWJW-101525ZA", "roll": 5, "qty": 0, "note": "", "empty": false}, {"rack": 1, "floor": 2, "code": "FWJW-101525ZA", "roll": 6, "qty": 0, "note": "", "empty": false}, {"rack": 1, "floor": 1, "code": "FWJW-101624ZJ", "roll": 1, "qty": 0, "note": "", "empty": false}, {"rack": 1, "floor": 1, "code": "FWJW-101624ZJ", "roll": 2, "qty": 0, "note": "", "empty": false}, {"rack": 1, "floor": 1, "code": "FWJW-101624ZJ", "roll": 3, "qty": 0, "note": "", "empty": false}, {"rack": 1, "floor": 1, "code": "FWJW-101624ZJ", "roll": 4, "qty": 0, "note": "", "empty": false}, {"rack": 1, "floor": 1, "code": "FWJW-101624ZJ", "roll": 5, "qty": 0, "note": "", "empty": false}, {"rack": 1, "floor": 1, "code": "FWJW-101624ZJ", "roll": 6, "qty": 0, "note": "", "empty": false}, {"rack": 2, "floor": 6, "code": "FWJW-111519ZB", "roll": 1, "qty": 0, "note": "", "empty": false}, {"rack": 2, "floor": 6, "code": "FWJW-111519ZB", "roll": 2, "qty": 0, "note": "", "empty": false}, {"rack": 2, "floor": 6, "code": "FWJW-111519ZB", "roll": 3, "qty": 0, "note": "", "empty": false}, {"rack": 2, "floor": 6, "code": "FWJW-111519ZB", "roll": 4, "qty": 0, "note": "", "empty": false}, {"rack": 2, "floor": 6, "code": "FWJW-111519ZB", "roll": 5, "qty": 0, "note": "", "empty": false}, {"rack": 2, "floor": 6, "code": "FWJW-111519ZB", "roll": 6, "qty": 0, "note": "", "empty": false}, {"rack": 2, "floor": 5, "code": "FWJW-111617ZB", "roll": 1, "qty": 0, "note": "", "empty": false}, {"rack": 2, "floor": 5, "code": "FWJW-111617ZB", "roll": 2, "qty": 0, "note": "", "empty": false}, {"rack": 2, "floor": 5, "code": "FWJW-111617ZB", "roll": 3, "qty": 0, "note": "", "empty": false}, {"rack": 2, "floor": 5, "code": "FWJW-111617ZB", "roll": 4, "qty": 0, "note": "", "empty": false}, {"rack": 2, "floor": 5, "code": "FWJW-111617ZB", "roll": 5, "qty": 0, "note": "", "empty": false}, {"rack": 2, "floor": 5, "code": "FWJW-111617ZB", "roll": 6, "qty": 0, "note": "", "empty": false}, {"rack": 2, "floor": 4, "code": "FWJW-111619ZB", "roll": 1, "qty": 0, "note": "", "empty": false}, {"rack": 2, "floor": 4, "code": "FWJW-111619ZB", "roll": 2, "qty": 0, "note": "", "empty": false}, {"rack": 2, "floor": 4, "code": "FWJW-111619ZB", "roll": 3, "qty": 0, "note": "", "empty": false}, {"rack": 2, "floor": 4, "code": "FWJW-111619ZB", "roll": 4, "qty": 0, "note": "", "empty": false}, {"rack": 2, "floor": 4, "code": "FWJW-111619ZB", "roll": 5, "qty": 0, "note": "", "empty": false}, {"rack": 2, "floor": 4, "code": "FWJW-111619ZB", "roll": 6, "qty": 0, "note": "", "empty": false}, {"rack": 2, "floor": 3, "code": "FWJW-111619ZD", "roll": 1, "qty": 0, "note": "", "empty": false}, {"rack": 2, "floor": 3, "code": "FWJW-111619ZD", "roll": 2, "qty": 0, "note": "", "empty": false}, {"rack": 2, "floor": 3, "code": "FWJW-111619ZD", "roll": 3, "qty": 0, "note": "", "empty": false}, {"rack": 2, "floor": 3, "code": "FWJW-111619ZD", "roll": 4, "qty": 0, "note": "", "empty": false}, {"rack": 2, "floor": 3, "code": "FWJW-111619ZD", "roll": 5, "qty": 0, "note": "", "empty": false}, {"rack": 2, "floor": 3, "code": "FWJW-111619ZD", "roll": 6, "qty": 0, "note": "", "empty": false}, {"rack": 2, "floor": 2, "code": "FWJW-111620ZD", "roll": 1, "qty": 0, "note": "", "empty": false}, {"rack": 2, "floor": 2, "code": "FWJW-111620ZD", "roll": 2, "qty": 0, "note": "", "empty": false}, {"rack": 2, "floor": 2, "code": "FWJW-111620ZD", "roll": 3, "qty": 0, "note": "", "empty": false}, {"rack": 2, "floor": 2, "code": "FWJW-111620ZD", "roll": 4, "qty": 0, "note": "", "empty": false}, {"rack": 2, "floor": 2, "code": "FWJW-111620ZD", "roll": 5, "qty": 0, "note": "", "empty": false}, {"rack": 2, "floor": 2, "code": "FWJW-111620ZD", "roll": 6, "qty": 0, "note": "", "empty": false}, {"rack": 2, "floor": 1, "code": "FWJW-111620ZA", "roll": 1, "qty": 0, "note": "", "empty": false}, {"rack": 2, "floor": 1, "code": "FWJW-111620ZA", "roll": 2, "qty": 0, "note": "", "empty": false}, {"rack": 2, "floor": 1, "code": "FWJW-111620ZA", "roll": 3, "qty": 0, "note": "", "empty": false}, {"rack": 2, "floor": 1, "code": "FWJW-111620ZA", "roll": 4, "qty": 0, "note": "", "empty": false}, {"rack": 2, "floor": 1, "code": "FWJW-111620ZA", "roll": 5, "qty": 0, "note": "", "empty": false}, {"rack": 2, "floor": 1, "code": "FWJW-111620ZA", "roll": 6, "qty": 0, "note": "", "empty": false}, {"rack": 3, "floor": 6, "code": "FWJW-121722Z", "roll": 1, "qty": 0, "note": "", "empty": false}, {"rack": 3, "floor": 6, "code": "FWJW-121722Z", "roll": 2, "qty": 0, "note": "", "empty": false}, {"rack": 3, "floor": 6, "code": "FWJW-121722Z", "roll": 3, "qty": 0, "note": "", "empty": false}, {"rack": 3, "floor": 6, "code": "FWJW-121722Z", "roll": 4, "qty": 0, "note": "", "empty": false}, {"rack": 3, "floor": 6, "code": "FWJW-121722Z", "roll": 5, "qty": 0, "note": "", "empty": false}, {"rack": 3, "floor": 6, "code": "FWJW-121722Z", "roll": 6, "qty": 0, "note": "", "empty": false}, {"rack": 3, "floor": 5, "code": "FWJW-121723Z", "roll": 1, "qty": 0, "note": "", "empty": false}, {"rack": 3, "floor": 5, "code": "FWJW-121723Z", "roll": 2, "qty": 0, "note": "", "empty": false}, {"rack": 3, "floor": 5, "code": "FWJW-121723Z", "roll": 3, "qty": 0, "note": "", "empty": false}, {"rack": 3, "floor": 5, "code": "FWJW-121723Z", "roll": 4, "qty": 0, "note": "", "empty": false}, {"rack": 3, "floor": 5, "code": "FWJW-121723Z", "roll": 5, "qty": 0, "note": "", "empty": false}, {"rack": 3, "floor": 5, "code": "FWJW-121723Z", "roll": 6, "qty": 0, "note": "", "empty": false}, {"rack": 3, "floor": 4, "code": "FWJW-121723ZB", "roll": 1, "qty": 0, "note": "", "empty": false}, {"rack": 3, "floor": 4, "code": "FWJW-121723ZB", "roll": 2, "qty": 0, "note": "", "empty": false}, {"rack": 3, "floor": 4, "code": "FWJW-121723ZB", "roll": 3, "qty": 0, "note": "", "empty": false}, {"rack": 3, "floor": 4, "code": "FWJW-121723ZB", "roll": 4, "qty": 0, "note": "", "empty": false}, {"rack": 3, "floor": 4, "code": "FWJW-121723ZB", "roll": 5, "qty": 0, "note": "", "empty": false}, {"rack": 3, "floor": 4, "code": "FWJW-121723ZB", "roll": 6, "qty": 0, "note": "", "empty": false}, {"rack": 3, "floor": 3, "code": "FWJW-121814Z", "roll": 1, "qty": 0, "note": "", "empty": false}, {"rack": 3, "floor": 3, "code": "FWJW-121814Z", "roll": 2, "qty": 0, "note": "", "empty": false}, {"rack": 3, "floor": 3, "code": "FWJW-121814Z", "roll": 3, "qty": 0, "note": "", "empty": false}, {"rack": 3, "floor": 3, "code": "FWJW-121814Z", "roll": 4, "qty": 0, "note": "", "empty": false}, {"rack": 3, "floor": 3, "code": "FWJW-121814Z", "roll": 5, "qty": 0, "note": "", "empty": false}, {"rack": 3, "floor": 3, "code": "FWJW-121814Z", "roll": 6, "qty": 0, "note": "", "empty": false}, {"rack": 3, "floor": 2, "code": "FWJW-131823ZB", "roll": 1, "qty": 0, "note": "", "empty": false}, {"rack": 3, "floor": 2, "code": "FWJW-131823ZB", "roll": 2, "qty": 0, "note": "", "empty": false}, {"rack": 3, "floor": 2, "code": "FWJW-131823ZB", "roll": 3, "qty": 0, "note": "", "empty": false}, {"rack": 3, "floor": 2, "code": "FWJW-131823ZB", "roll": 4, "qty": 0, "note": "", "empty": false}, {"rack": 3, "floor": 2, "code": "FWJW-131823ZB", "roll": 5, "qty": 0, "note": "", "empty": false}, {"rack": 3, "floor": 2, "code": "FWJW-131823ZB", "roll": 6, "qty": 0, "note": "", "empty": false}, {"rack": 3, "floor": 1, "code": "FWJW-132020Z", "roll": 1, "qty": 0, "note": "", "empty": false}, {"rack": 3, "floor": 1, "code": "FWJW-132020Z", "roll": 2, "qty": 0, "note": "", "empty": false}, {"rack": 3, "floor": 1, "code": "FWJW-132020Z", "roll": 3, "qty": 0, "note": "", "empty": false}, {"rack": 3, "floor": 1, "code": "FWJW-132020Z", "roll": 4, "qty": 0, "note": "", "empty": false}, {"rack": 3, "floor": 1, "code": "FWJW-132020Z", "roll": 5, "qty": 0, "note": "", "empty": false}, {"rack": 3, "floor": 1, "code": "FWJW-132020Z", "roll": 6, "qty": 0, "note": "", "empty": false}, {"rack": 4, "floor": 6, "code": "FWJW-141922ZA", "roll": 1, "qty": 0, "note": "", "empty": false}, {"rack": 4, "floor": 6, "code": "FWJW-141922ZA", "roll": 2, "qty": 0, "note": "", "empty": false}, {"rack": 4, "floor": 6, "code": "FWJW-141922ZA", "roll": 3, "qty": 0, "note": "", "empty": false}, {"rack": 4, "floor": 6, "code": "FWJW-141922ZA", "roll": 4, "qty": 0, "note": "", "empty": false}, {"rack": 4, "floor": 6, "code": "FWJW-141922ZA", "roll": 5, "qty": 0, "note": "", "empty": false}, {"rack": 4, "floor": 6, "code": "FWJW-141922ZA", "roll": 6, "qty": 0, "note": "", "empty": false}, {"rack": 4, "floor": 5, "code": "FWJW-141923ZA", "roll": 1, "qty": 0, "note": "", "empty": false}, {"rack": 4, "floor": 5, "code": "FWJW-141923ZA", "roll": 2, "qty": 0, "note": "", "empty": false}, {"rack": 4, "floor": 5, "code": "FWJW-141923ZA", "roll": 3, "qty": 0, "note": "", "empty": false}, {"rack": 4, "floor": 5, "code": "FWJW-141923ZA", "roll": 4, "qty": 0, "note": "", "empty": false}, {"rack": 4, "floor": 5, "code": "FWJW-141923ZA", "roll": 5, "qty": 0, "note": "", "empty": false}, {"rack": 4, "floor": 5, "code": "FWJW-141923ZA", "roll": 6, "qty": 0, "note": "", "empty": false}, {"rack": 4, "floor": 4, "code": "FWJW-142023ZA", "roll": 1, "qty": 0, "note": "", "empty": false}, {"rack": 4, "floor": 4, "code": "FWJW-142023ZA", "roll": 2, "qty": 0, "note": "", "empty": false}, {"rack": 4, "floor": 4, "code": "FWJW-142023ZA", "roll": 3, "qty": 0, "note": "", "empty": false}, {"rack": 4, "floor": 4, "code": "FWJW-142023ZA", "roll": 4, "qty": 0, "note": "", "empty": false}, {"rack": 4, "floor": 4, "code": "FWJW-142023ZA", "roll": 5, "qty": 0, "note": "", "empty": false}, {"rack": 4, "floor": 4, "code": "FWJW-142023ZA", "roll": 6, "qty": 0, "note": "", "empty": false}, {"rack": 4, "floor": 3, "code": "FWJW-152023ZM", "roll": 1, "qty": 0, "note": "", "empty": false}, {"rack": 4, "floor": 3, "code": "FWJW-152023ZM", "roll": 2, "qty": 0, "note": "", "empty": false}, {"rack": 4, "floor": 3, "code": "FWJW-152023ZM", "roll": 3, "qty": 0, "note": "", "empty": false}, {"rack": 4, "floor": 3, "code": "FWJW-152023ZM", "roll": 4, "qty": 0, "note": "", "empty": false}, {"rack": 4, "floor": 3, "code": "FWJW-152023ZM", "roll": 5, "qty": 0, "note": "", "empty": false}, {"rack": 4, "floor": 3, "code": "FWJW-152023ZM", "roll": 6, "qty": 0, "note": "", "empty": false}, {"rack": 4, "floor": 2, "code": "FWJW-152114Z", "roll": 1, "qty": 0, "note": "", "empty": false}, {"rack": 4, "floor": 2, "code": "FWJW-152114Z", "roll": 2, "qty": 0, "note": "", "empty": false}, {"rack": 4, "floor": 2, "code": "FWJW-152114Z", "roll": 3, "qty": 0, "note": "", "empty": false}, {"rack": 4, "floor": 2, "code": "FWJW-152114Z", "roll": 4, "qty": 0, "note": "", "empty": false}, {"rack": 4, "floor": 2, "code": "FWJW-152114Z", "roll": 5, "qty": 0, "note": "", "empty": false}, {"rack": 4, "floor": 2, "code": "FWJW-152114Z", "roll": 6, "qty": 0, "note": "", "empty": false}, {"rack": 4, "floor": 1, "code": "FWJW-152117ZA", "roll": 1, "qty": 0, "note": "", "empty": false}, {"rack": 4, "floor": 1, "code": "FWJW-152117ZA", "roll": 2, "qty": 0, "note": "", "empty": false}, {"rack": 4, "floor": 1, "code": "FWJW-152117ZA", "roll": 3, "qty": 0, "note": "", "empty": false}, {"rack": 4, "floor": 1, "code": "FWJW-152117ZA", "roll": 4, "qty": 0, "note": "", "empty": false}, {"rack": 4, "floor": 1, "code": "FWJW-152117ZA", "roll": 5, "qty": 0, "note": "", "empty": false}, {"rack": 4, "floor": 1, "code": "FWJW-152117ZA", "roll": 6, "qty": 0, "note": "", "empty": false}, {"rack": 5, "floor": 6, "code": "FWJW-152123Z", "roll": 1, "qty": 0, "note": "", "empty": false}, {"rack": 5, "floor": 6, "code": "FWJW-152123Z", "roll": 2, "qty": 0, "note": "", "empty": false}, {"rack": 5, "floor": 6, "code": "FWJW-152123Z", "roll": 3, "qty": 0, "note": "", "empty": false}, {"rack": 5, "floor": 6, "code": "FWJW-152123Z", "roll": 4, "qty": 0, "note": "", "empty": false}, {"rack": 5, "floor": 6, "code": "FWJW-152123Z", "roll": 5, "qty": 0, "note": "", "empty": false}, {"rack": 5, "floor": 6, "code": "FWJW-152123Z", "roll": 6, "qty": 0, "note": "", "empty": false}, {"rack": 5, "floor": 5, "code": "FWJW-162116Z", "roll": 1, "qty": 0, "note": "", "empty": false}, {"rack": 5, "floor": 5, "code": "FWJW-162116Z", "roll": 2, "qty": 0, "note": "", "empty": false}, {"rack": 5, "floor": 5, "code": "FWJW-162116Z", "roll": 3, "qty": 0, "note": "", "empty": false}, {"rack": 5, "floor": 5, "code": "FWJW-162116Z", "roll": 4, "qty": 0, "note": "", "empty": false}, {"rack": 5, "floor": 5, "code": "FWJW-162116Z", "roll": 5, "qty": 0, "note": "", "empty": false}, {"rack": 5, "floor": 5, "code": "FWJW-162116Z", "roll": 6, "qty": 0, "note": "", "empty": false}, {"rack": 5, "floor": 4, "code": "FWJW-162223ZA", "roll": 1, "qty": 0, "note": "", "empty": false}, {"rack": 5, "floor": 4, "code": "FWJW-162223ZA", "roll": 2, "qty": 0, "note": "", "empty": false}, {"rack": 5, "floor": 4, "code": "FWJW-162223ZA", "roll": 3, "qty": 0, "note": "", "empty": false}, {"rack": 5, "floor": 4, "code": "FWJW-162223ZA", "roll": 4, "qty": 0, "note": "", "empty": false}, {"rack": 5, "floor": 4, "code": "FWJW-162223ZA", "roll": 5, "qty": 0, "note": "", "empty": false}, {"rack": 5, "floor": 4, "code": "FWJW-162223ZA", "roll": 6, "qty": 0, "note": "", "empty": false}, {"rack": 5, "floor": 3, "code": "FWJW-162310ZA", "roll": 1, "qty": 0, "note": "", "empty": false}, {"rack": 5, "floor": 3, "code": "FWJW-162310ZA", "roll": 2, "qty": 0, "note": "", "empty": false}, {"rack": 5, "floor": 3, "code": "FWJW-162310ZA", "roll": 3, "qty": 0, "note": "", "empty": false}, {"rack": 5, "floor": 3, "code": "FWJW-162310ZA", "roll": 4, "qty": 0, "note": "", "empty": false}, {"rack": 5, "floor": 3, "code": "FWJW-162310ZA", "roll": 5, "qty": 0, "note": "", "empty": false}, {"rack": 5, "floor": 3, "code": "FWJW-162310ZA", "roll": 6, "qty": 0, "note": "", "empty": false}, {"rack": 5, "floor": 2, "code": "FWJW-162313Z", "roll": 1, "qty": 0, "note": "", "empty": false}, {"rack": 5, "floor": 2, "code": "FWJW-162313Z", "roll": 2, "qty": 0, "note": "", "empty": false}, {"rack": 5, "floor": 2, "code": "FWJW-162313Z", "roll": 3, "qty": 0, "note": "", "empty": false}, {"rack": 5, "floor": 2, "code": "FWJW-162313Z", "roll": 4, "qty": 0, "note": "", "empty": false}, {"rack": 5, "floor": 2, "code": "FWJW-162313Z", "roll": 5, "qty": 0, "note": "", "empty": false}, {"rack": 5, "floor": 2, "code": "FWJW-162313Z", "roll": 6, "qty": 0, "note": "", "empty": false}, {"rack": 5, "floor": 1, "code": "FWJW-182512Z", "roll": 1, "qty": 0, "note": "", "empty": false}, {"rack": 5, "floor": 1, "code": "FWJW-182512Z", "roll": 2, "qty": 0, "note": "", "empty": false}, {"rack": 5, "floor": 1, "code": "FWJW-182512Z", "roll": 3, "qty": 0, "note": "", "empty": false}, {"rack": 5, "floor": 1, "code": "FWJW-182512Z", "roll": 4, "qty": 0, "note": "", "empty": false}, {"rack": 5, "floor": 1, "code": "FWJW-182512Z", "roll": 5, "qty": 0, "note": "", "empty": false}, {"rack": 5, "floor": 1, "code": "FWJW-182512Z", "roll": 6, "qty": 0, "note": "", "empty": false}, {"rack": 6, "floor": 6, "code": "FWJW-182516ZA", "roll": 1, "qty": 0, "note": "", "empty": false}, {"rack": 6, "floor": 6, "code": "FWJW-182516ZA", "roll": 2, "qty": 0, "note": "", "empty": false}, {"rack": 6, "floor": 6, "code": "FWJW-182516ZA", "roll": 3, "qty": 0, "note": "", "empty": false}, {"rack": 6, "floor": 6, "code": "FWJW-182516ZA", "roll": 4, "qty": 0, "note": "", "empty": false}, {"rack": 6, "floor": 6, "code": "FWJW-182516ZA", "roll": 5, "qty": 0, "note": "", "empty": false}, {"rack": 6, "floor": 6, "code": "FWJW-182516ZA", "roll": 6, "qty": 0, "note": "", "empty": false}, {"rack": 6, "floor": 5, "code": "FWJW-182517Z", "roll": 1, "qty": 0, "note": "", "empty": false}, {"rack": 6, "floor": 5, "code": "FWJW-182517Z", "roll": 2, "qty": 0, "note": "", "empty": false}, {"rack": 6, "floor": 5, "code": "FWJW-182517Z", "roll": 3, "qty": 0, "note": "", "empty": false}, {"rack": 6, "floor": 5, "code": "FWJW-182517Z", "roll": 4, "qty": 0, "note": "", "empty": false}, {"rack": 6, "floor": 5, "code": "FWJW-182517Z", "roll": 5, "qty": 0, "note": "", "empty": false}, {"rack": 6, "floor": 5, "code": "FWJW-182517Z", "roll": 6, "qty": 0, "note": "", "empty": false}, {"rack": 6, "floor": 4, "code": "FWJW-202816Z", "roll": 1, "qty": 0, "note": "", "empty": false}, {"rack": 6, "floor": 4, "code": "FWJW-202816Z", "roll": 2, "qty": 0, "note": "", "empty": false}, {"rack": 6, "floor": 4, "code": "FWJW-202816Z", "roll": 3, "qty": 0, "note": "", "empty": false}, {"rack": 6, "floor": 4, "code": "FWJW-202816Z", "roll": 4, "qty": 0, "note": "", "empty": false}, {"rack": 6, "floor": 4, "code": "FWJW-202816Z", "roll": 5, "qty": 0, "note": "", "empty": false}, {"rack": 6, "floor": 4, "code": "FWJW-202816Z", "roll": 6, "qty": 0, "note": "", "empty": false}, {"rack": 6, "floor": 3, "code": "FWJW-223017ZD", "roll": 1, "qty": 0, "note": "", "empty": false}, {"rack": 6, "floor": 3, "code": "FWJW-223017ZD", "roll": 2, "qty": 0, "note": "", "empty": false}, {"rack": 6, "floor": 3, "code": "FWJW-223017ZD", "roll": 3, "qty": 0, "note": "", "empty": false}, {"rack": 6, "floor": 3, "code": "FWJW-223017ZD", "roll": 4, "qty": 0, "note": "", "empty": false}, {"rack": 6, "floor": 3, "code": "FWJW-223017ZD", "roll": 5, "qty": 0, "note": "", "empty": false}, {"rack": 6, "floor": 3, "code": "FWJW-223017ZD", "roll": 6, "qty": 0, "note": "", "empty": false}, {"rack": 6, "floor": 2, "code": "FWJW-233118ZA", "roll": 1, "qty": 0, "note": "", "empty": false}, {"rack": 6, "floor": 2, "code": "FWJW-233118ZA", "roll": 2, "qty": 0, "note": "", "empty": false}, {"rack": 6, "floor": 2, "code": "FWJW-233118ZA", "roll": 3, "qty": 0, "note": "", "empty": false}, {"rack": 6, "floor": 2, "code": "FWJW-233118ZA", "roll": 4, "qty": 0, "note": "", "empty": false}, {"rack": 6, "floor": 2, "code": "FWJW-233118ZA", "roll": 5, "qty": 0, "note": "", "empty": false}, {"rack": 6, "floor": 2, "code": "FWJW-233118ZA", "roll": 6, "qty": 0, "note": "", "empty": false}, {"rack": 6, "floor": 1, "code": "FWJW-253216ZA", "roll": 1, "qty": 0, "note": "", "empty": false}, {"rack": 6, "floor": 1, "code": "FWJW-253216ZA", "roll": 2, "qty": 0, "note": "", "empty": false}, {"rack": 6, "floor": 1, "code": "FWJW-253216ZA", "roll": 3, "qty": 0, "note": "", "empty": false}, {"rack": 6, "floor": 1, "code": "FWJW-253216ZA", "roll": 4, "qty": 0, "note": "", "empty": false}, {"rack": 6, "floor": 1, "code": "FWJW-253216ZA", "roll": 5, "qty": 0, "note": "", "empty": false}, {"rack": 6, "floor": 1, "code": "FWJW-253216ZA", "roll": 6, "qty": 0, "note": "", "empty": false}, {"rack": 7, "floor": 6, "code": "FWJW-253527ZA", "roll": 1, "qty": 0, "note": "", "empty": false}, {"rack": 7, "floor": 6, "code": "FWJW-253527ZA", "roll": 2, "qty": 0, "note": "", "empty": false}, {"rack": 7, "floor": 6, "code": "FWJW-253527ZA", "roll": 3, "qty": 0, "note": "", "empty": false}, {"rack": 7, "floor": 6, "code": "FWJW-253527ZA", "roll": 4, "qty": 0, "note": "", "empty": false}, {"rack": 7, "floor": 6, "code": "FWJW-253527ZA", "roll": 5, "qty": 0, "note": "", "empty": false}, {"rack": 7, "floor": 6, "code": "FWJW-253527ZA", "roll": 6, "qty": 0, "note": "", "empty": false}, {"rack": 7, "floor": 5, "code": "FWJW-263218ZA", "roll": 1, "qty": 0, "note": "", "empty": false}, {"rack": 7, "floor": 5, "code": "FWJW-263218ZA", "roll": 2, "qty": 0, "note": "", "empty": false}, {"rack": 7, "floor": 5, "code": "FWJW-263218ZA", "roll": 3, "qty": 0, "note": "", "empty": false}, {"rack": 7, "floor": 5, "code": "FWJW-263218ZA", "roll": 4, "qty": 0, "note": "", "empty": false}, {"rack": 7, "floor": 5, "code": "FWJW-263218ZA", "roll": 5, "qty": 0, "note": "", "empty": false}, {"rack": 7, "floor": 5, "code": "FWJW-263218ZA", "roll": 6, "qty": 0, "note": "", "empty": false}, {"rack": 7, "floor": 4, "code": "FWJW-283518ZA", "roll": 1, "qty": 0, "note": "", "empty": false}, {"rack": 7, "floor": 4, "code": "FWJW-283518ZA", "roll": 2, "qty": 0, "note": "", "empty": false}, {"rack": 7, "floor": 4, "code": "FWJW-283518ZA", "roll": 3, "qty": 0, "note": "", "empty": false}, {"rack": 7, "floor": 4, "code": "FWJW-283518ZA", "roll": 4, "qty": 0, "note": "", "empty": false}, {"rack": 7, "floor": 4, "code": "FWJW-283518ZA", "roll": 5, "qty": 0, "note": "", "empty": false}, {"rack": 7, "floor": 4, "code": "FWJW-283518ZA", "roll": 6, "qty": 0, "note": "", "empty": false}, {"rack": 7, "floor": 3, "code": "FWJW-283519ZA", "roll": 1, "qty": 0, "note": "", "empty": false}, {"rack": 7, "floor": 3, "code": "FWJW-283519ZA", "roll": 2, "qty": 0, "note": "", "empty": false}, {"rack": 7, "floor": 3, "code": "FWJW-283519ZA", "roll": 3, "qty": 0, "note": "", "empty": false}, {"rack": 7, "floor": 3, "code": "FWJW-283519ZA", "roll": 4, "qty": 0, "note": "", "empty": false}, {"rack": 7, "floor": 3, "code": "FWJW-283519ZA", "roll": 5, "qty": 0, "note": "", "empty": false}, {"rack": 7, "floor": 3, "code": "FWJW-283519ZA", "roll": 6, "qty": 0, "note": "", "empty": false}, {"rack": 7, "floor": 2, "code": "", "roll": 1, "qty": 0, "note": "", "empty": true}, {"rack": 7, "floor": 2, "code": "", "roll": 2, "qty": 0, "note": "", "empty": true}, {"rack": 7, "floor": 2, "code": "", "roll": 3, "qty": 0, "note": "", "empty": true}, {"rack": 7, "floor": 2, "code": "", "roll": 4, "qty": 0, "note": "", "empty": true}, {"rack": 7, "floor": 2, "code": "", "roll": 5, "qty": 0, "note": "", "empty": true}, {"rack": 7, "floor": 2, "code": "", "roll": 6, "qty": 0, "note": "", "empty": true}, {"rack": 7, "floor": 1, "code": "", "roll": 1, "qty": 0, "note": "", "empty": true}, {"rack": 7, "floor": 1, "code": "", "roll": 2, "qty": 0, "note": "", "empty": true}, {"rack": 7, "floor": 1, "code": "", "roll": 3, "qty": 0, "note": "", "empty": true}, {"rack": 7, "floor": 1, "code": "", "roll": 4, "qty": 0, "note": "", "empty": true}, {"rack": 7, "floor": 1, "code": "", "roll": 5, "qty": 0, "note": "", "empty": true}, {"rack": 7, "floor": 1, "code": "", "roll": 6, "qty": 0, "note": "", "empty": true}, {"rack": 8, "floor": 6, "code": "", "roll": 1, "qty": 0, "note": "", "empty": true}, {"rack": 8, "floor": 6, "code": "", "roll": 2, "qty": 0, "note": "", "empty": true}, {"rack": 8, "floor": 6, "code": "", "roll": 3, "qty": 0, "note": "", "empty": true}, {"rack": 8, "floor": 6, "code": "", "roll": 4, "qty": 0, "note": "", "empty": true}, {"rack": 8, "floor": 6, "code": "", "roll": 5, "qty": 0, "note": "", "empty": true}, {"rack": 8, "floor": 6, "code": "", "roll": 6, "qty": 0, "note": "", "empty": true}, {"rack": 8, "floor": 5, "code": "", "roll": 1, "qty": 0, "note": "", "empty": true}, {"rack": 8, "floor": 5, "code": "", "roll": 2, "qty": 0, "note": "", "empty": true}, {"rack": 8, "floor": 5, "code": "", "roll": 3, "qty": 0, "note": "", "empty": true}, {"rack": 8, "floor": 5, "code": "", "roll": 4, "qty": 0, "note": "", "empty": true}, {"rack": 8, "floor": 5, "code": "", "roll": 5, "qty": 0, "note": "", "empty": true}, {"rack": 8, "floor": 5, "code": "", "roll": 6, "qty": 0, "note": "", "empty": true}, {"rack": 8, "floor": 4, "code": "", "roll": 1, "qty": 0, "note": "", "empty": true}, {"rack": 8, "floor": 4, "code": "", "roll": 2, "qty": 0, "note": "", "empty": true}, {"rack": 8, "floor": 4, "code": "", "roll": 3, "qty": 0, "note": "", "empty": true}, {"rack": 8, "floor": 4, "code": "", "roll": 4, "qty": 0, "note": "", "empty": true}, {"rack": 8, "floor": 4, "code": "", "roll": 5, "qty": 0, "note": "", "empty": true}, {"rack": 8, "floor": 4, "code": "", "roll": 6, "qty": 0, "note": "", "empty": true}, {"rack": 8, "floor": 3, "code": "", "roll": 1, "qty": 0, "note": "", "empty": true}, {"rack": 8, "floor": 3, "code": "", "roll": 2, "qty": 0, "note": "", "empty": true}, {"rack": 8, "floor": 3, "code": "", "roll": 3, "qty": 0, "note": "", "empty": true}, {"rack": 8, "floor": 3, "code": "", "roll": 4, "qty": 0, "note": "", "empty": true}, {"rack": 8, "floor": 3, "code": "", "roll": 5, "qty": 0, "note": "", "empty": true}, {"rack": 8, "floor": 3, "code": "", "roll": 6, "qty": 0, "note": "", "empty": true}, {"rack": 8, "floor": 2, "code": "", "roll": 1, "qty": 0, "note": "", "empty": true}, {"rack": 8, "floor": 2, "code": "", "roll": 2, "qty": 0, "note": "", "empty": true}, {"rack": 8, "floor": 2, "code": "", "roll": 3, "qty": 0, "note": "", "empty": true}, {"rack": 8, "floor": 2, "code": "", "roll": 4, "qty": 0, "note": "", "empty": true}, {"rack": 8, "floor": 2, "code": "", "roll": 5, "qty": 0, "note": "", "empty": true}, {"rack": 8, "floor": 2, "code": "", "roll": 6, "qty": 0, "note": "", "empty": true}, {"rack": 8, "floor": 1, "code": "", "roll": 1, "qty": 0, "note": "", "empty": true}, {"rack": 8, "floor": 1, "code": "", "roll": 2, "qty": 0, "note": "", "empty": true}, {"rack": 8, "floor": 1, "code": "", "roll": 3, "qty": 0, "note": "", "empty": true}, {"rack": 8, "floor": 1, "code": "", "roll": 4, "qty": 0, "note": "", "empty": true}, {"rack": 8, "floor": 1, "code": "", "roll": 5, "qty": 0, "note": "", "empty": true}, {"rack": 8, "floor": 1, "code": "", "roll": 6, "qty": 0, "note": "", "empty": true}]));
+    logs=[];sel.clear();saveData();calcStats();buildTabs();renderView();showToast('초기화 완료');
+  }
+}
+
+function showToast(msg){
+  const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),2000);
+}
+
+loadData();calcStats();buildTabs();renderView();
+</script>
+</body>
+</html>
